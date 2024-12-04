@@ -1,0 +1,134 @@
+﻿#######################################
+# Syntax Coloring Map
+# SEN6x  //paulvha December 2024
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+# structure
+sen6x_values	KEYWORD1
+sen6x_concentration_values	KEYWORD1
+sen6x_RHT_comp	KEYWORD1
+sen6x_version	KEYWORD1
+sen6x_raw_values	KEYWORD1
+sen6x_tmp_comp	KEYWORD1
+sen6x_xox	KEYWORD1
+
+SEN6x	KEYWORD1
+sen6x	KEYWORD1
+
+# sen6x_values  sen6x_raw_values from SEN6x
+MassPM1	KEYWORD1
+MassPM1	KEYWORD1
+MassPM2	KEYWORD1
+MassPM4	KEYWORD1
+MassPM10	KEYWORD1
+NumPM0	KEYWORD1
+NumPM1	KEYWORD1
+NumPM2	KEYWORD1
+NumPM4	KEYWORD1
+NumPM10	KEYWORD1
+PartSize	KEYWORD1
+VOC	KEYWORD1
+NOx	KEYWORD1
+NOX	KEYWORD1
+Temp	KEYWORD1
+Hum	KEYWORD1
+CO2	KEYWORD1
+HCHO	KEYWORD1
+
+# sen6x_version 
+F_major	KEYWORD1
+F_minor	KEYWORD1
+H_major	KEYWORD1
+H_minor	KEYWORD1
+P_major	KEYWORD1
+P_minor	KEYWORD1
+L_major	KEYWORD1
+L_minor	KEYWORD1
+F_debug	KEYWORD1
+
+# sen6x_xox
+IndexOffset	KEYWORD1
+LearnTimeOffsetHours	KEYWORD1
+LearnTimeGainHours	KEYWORD1
+GateMaxDurationMin	KEYWORD1
+stdInitial	KEYWORD1
+GainFactor	KEYWORD1
+
+# sen6x_tmp_comp
+offset	KEYWORD1
+slope	KEYWORD1
+time	KEYWORD1
+slot	KEYWORD1
+
+SEN6x_device	KEYWORD1
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+begin	KEYWORD2
+EnableDebugging	KEYWORD2
+Probe	KEYWORD2
+Reset	KEYWORD2
+Start	KEYWORD2
+Stop	KEYWORD2
+Clean	KEYWORD2
+ActivateSHTHeater	KEYWORD2
+ForceCO2Recal	KEYWORD2
+
+GetAltitude	KEYWORD2
+GetStatusReg	KEYWORD2
+GetErrDescription	KEYWORD2
+GetSerialNumber	KEYWORD2
+GetProductName	KEYWORD2
+GetVersion	KEYWORD2
+GetValues	KEYWORD2
+GetRawValues	KEYWORD2
+GetAmbientPressure	KEYWORD2
+GetCo2SelfCalibratrion	KEYWORD2
+GetConcentration	KEYWORD2
+GetNoxAlgorithm	KEYWORD2
+GetVocAlgorithm	KEYWORD2
+GetVocAlgorithmState	KEYWORD2
+GetDevice	KEYWORD2
+Check_data_ready	KEYWORD2
+
+SetTempAccelMode	KEYWORD2
+SetAltitude	KEYWORD2
+SetAmbientPressure	KEYWORD2
+SetCo2SelfCalibratrion	KEYWORD2
+SetNoxAlgorithm	KEYWORD2
+SetVocAlgorithmState	KEYWORD2
+SetVocAlgorithm	KEYWORD2
+SetTmpComp	KEYWORD2
+SetDevice	KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+
+# general errors
+SEN6x_ERR_OK	LITERAL1
+SEN6x_ERR_DATALENGTH	LITERAL1
+SEN6x_ERR_UNKNOWNCMD	LITERAL1
+SEN6x_ERR_ACCESSRIGHT	LITERAL1
+SEN6x_ERR_PARAMETER	LITERAL1
+SEN6x_ERR_OUTOFRANGE	LITERAL1
+SEN6x_ERR_CMDSTATE	LITERAL1
+SEN6x_ERR_TIMEOUT	LITERAL1
+SEN6x_ERR_PROTOCOL	LITERAL1
+
+# device status
+STATUS_OK_6x	LITERAL1
+STATUS_SPEED_ERROR_6x	LITERAL1 
+STATUS_FAN_ERROR_6x	LITERAL1
+STATUS_GAS_ERROR_6x	LITERAL1
+STATUS_RHT_ERROR_6x	LITERAL1
+STATUS_CO2_2_ERROR_6x	LITERAL1
+STATUS_CO2_1_ERROR_6x	LITERAL1
+STATUS_HCHO_ERROR_6x	LITERAL1
+STATUS_PM_ERROR_6x	LITERAL1
+
