@@ -8,7 +8,7 @@
  *  Mass and PM numbers. 
  *  
  *  
- *  Tested on UNOR4, 
+ *  Tested on UNOR4 
  *  
  *  ### TODO #### Artemis ATP, UNOR3, ATmega, Due, ESP32
  *   
@@ -159,7 +159,7 @@ void setup() {
     while(1);
   }
   else  {
-    Serial.println(F("Detected sen6x."));
+    Serial.println(F("Connected sen6x."));
   }
 
   // reset SEN6x
@@ -310,7 +310,7 @@ void Display_Device_info()
     Serial.println(F("could not read product name."));
     while(1);
   }
-  Serial.print(F("Product name: "));
+  Serial.print(F("Product name : "));
   
   // if name is provided by the device
   if (strlen(num) > 2) {
@@ -343,26 +343,26 @@ void Display_Versions()
     while(1);
   }
 
-  Serial.println(F("Version info:"));
-  Serial.print(F("\tFirmware: "));
+  Serial.print(F("Version info : "));
+  Serial.print(F("Firmware: "));
   Serial.print(v.F_major);
   Serial.print(".");
-  Serial.println(v.F_minor);
+  Serial.print(v.F_minor);
   
-  Serial.print(F("\tHardware: "));
+  Serial.print(F(", Hardware: "));
   Serial.print(v.H_major);
   Serial.print(".");
-  Serial.println(v.H_minor);
+  Serial.print(v.H_minor);
 
-  Serial.print(F("\tProtocol: "));
+  Serial.print(F(", Protocol: "));
   Serial.print(v.P_major);
   Serial.print(".");
-  Serial.println(v.P_minor);
+  Serial.print(v.P_minor);
 
-  Serial.print(F("\tLibrary:  "));
+  Serial.print(F(", Library: "));
   Serial.print(v.L_major);
   Serial.print(".");
-  Serial.println(v.L_minor);
+  Serial.print(v.L_minor);
   Serial.println();
 }
 

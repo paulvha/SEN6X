@@ -131,7 +131,7 @@ void setup() {
     while(1);
   }
   else  {
-    Serial.println(F("Detected SEN6x."));
+    Serial.println(F("Connected SEN6x."));
   }
 
   // reset SEN6x
@@ -155,7 +155,7 @@ void setup() {
     Serial.println(F("Could not probe / connect with SPS30. Freeze"));
     while(1);
   }
-  else  Serial.println(F("Detected SPS30."));
+  else  Serial.println(F("Connected SPS30."));
 
   // reset SPS30 connection
   if (! sps30.reset()){

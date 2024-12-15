@@ -15,7 +15,7 @@ I have done a number of projects on air-sensors. This is a version of a working 
 More work continues to happen to create examples and compare against other sensors.
 
 ## Prerequisites
-Examples 20, 21, 22 have a dependency on other libraries and hardware. Documented in sketch.
+Examples 2, 20, 21, 22 have a dependency on other libraries and hardware. Documented in sketch.
 
 ## Software installation
 Obtain the zip and install like any other.
@@ -29,6 +29,7 @@ Please see the description in the top of the sketch and read the documentation (
 
 ### Version DRAFT / December 2024
  * initial version
+ * ver 1.0.1 : updates and added example2
 
 ## Author
  * Paul van Haastrecht (paulvha@hotmail.com)

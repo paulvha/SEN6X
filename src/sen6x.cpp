@@ -485,15 +485,10 @@ uint8_t SEN6x::SetTempAccelMode(sen6x_RHT_comp *table)
 	uint8_t ret;
 	
 	if (_device == SEN60) return(SEN6x_ERR_PARAMETER);
-
-	// can only be done when stopped	
-	if (! CheckStarted()) return(SEN6x_ERR_PROTOCOL);
 	
   I2C_fill_buffer(SEN6x_SET_TEMP_ACCEL, table);
 
   ret = I2C_SetPointer();
-  
-  if (! CheckRestart()) return(SEN6x_ERR_PROTOCOL);
 
 	return(ret);
 }
@@ -955,29 +950,26 @@ uint8_t SEN6x::SetAltitude(uint16_t val)
 
 /**
  * Applies to: SEN63C, SEN65, SEN66, SEN68
+ * Using the sen5x information for now. (December 2024)
  */ 
- //????????????????????????
 uint8_t SEN6x::SetTmpComp(sen6x_tmp_comp *tmp)
 {
   uint8_t ret;
-  
+	sen6x_tmp_comp t;
+	 
   if (_device == SEN60) return(SEN6x_ERR_PARAMETER);
+
+	t.offset = tmp->offset * 200;
+	t.slope = tmp->slope * 1000;
+	t.slot = tmp->slot;
+	t.time = tmp->time;
   
-  // measurement started already?
-	if (! CheckStarted()) return(SEN6x_ERR_PROTOCOL);
-  
-  // apply scaling
-  tmp->offset = tmp->offset * 200;
-  tmp->slope = tmp->slope * 1000;
-  
-  // check
-	if (tmp->slot > 4) tmp->slot  = 4;
+  // check slot (not clear what this is. awaiting on documentation)???
+	if (t.slot > 4) t.slot  = 4;
 	
-  I2C_fill_buffer(SEN6x_SET_TEMP_COMP, tmp);
+  I2C_fill_buffer(SEN6x_SET_TEMP_COMP, &t);
   
   ret = I2C_SetPointer();
-  
-  if (! CheckRestart()) return(SEN6x_ERR_PROTOCOL);
   
   return(ret);
 }
@@ -1414,7 +1406,7 @@ void SEN6x::I2C_fill_buffer(uint16_t cmd, void *val)
       _Send_BUF[i++] = SEN6x_GET_SET_C02_CAL & 0xff;        //1 LSB
         
        // add data
-      _Send_BUF[i++] = 0x0;                       //2 MSB
+      _Send_BUF[i++] = 0x0;                        //2 MSB
       _Send_BUF[i++] = data16 & 0xff;              //3 LSB
       _Send_BUF[i++] = I2C_calc_CRC(&_Send_BUF[2]); //4 CRC 
       break;
@@ -1562,7 +1554,7 @@ uint8_t SEN6x::I2C_ReadToBuffer(uint8_t count, bool chk_zero)
   while (_i2cPort->available()) {  // read all
 
     data[i++] = _i2cPort->read();
-//DebugPrintf("data 0x%02X\n", data[i-1]);
+DebugPrintf("data 0x%02X\n", data[i-1]);
     // 2 bytes RH, 1 CRC
     if( i == 3) {
 
