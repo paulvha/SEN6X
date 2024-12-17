@@ -3,7 +3,7 @@
 ## ===========================================================
 
 A program to set instructions and get information from an SEN6x. It has been
-tested to run I2C communication on UNOR4 (MORE TO FOLLOW !!!)
+tested to run I2C communication on UNOR4 Wifi(MORE TO FOLLOW !!!)
 
 DRAFT DRAFT DRAFT DRAFT DRAFT DRAFT DRAFT DRAFT DRAFT DRAFT DRAFT DRAFT DRAFT 
 
@@ -28,8 +28,9 @@ Please see the description in the top of the sketch and read the documentation (
 ## Versioning
 
 ### Version DRAFT / December 2024
- * initial version
- * ver 1.0.1 : updates and added example2
+ * initial draft version
+ * ver draft 1.1 : updates and added example2
+ * ver draft 1.2 : updates and added examples
 
 ## Author
  * Paul van Haastrecht (paulvha@hotmail.com)
