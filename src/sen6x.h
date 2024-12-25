@@ -81,7 +81,7 @@ struct sen6x_values {
   float   MassPM2;        // Mass Concentration PM2.5 [μg/m3]     ALL
   float   MassPM4;        // Mass Concentration PM4.0 [μg/m3]     ALL
   float   MassPM10;       // Mass Concentration PM10 [μg/m3]      ALL
-  float   NumPM0;         // Number Concentration PM0.5 [#/cm3]	  SEN60
+  float   NumPM0;         // Number Concentration PM0.5 [#/cm3]   SEN60
   float   NumPM1;         // Number Concentration PM1.0 [#/cm3]   SEN60
   float   NumPM2;         // Number Concentration PM2.5 [#/cm3]   SEN60
   float   NumPM4;         // Number Concentration PM4.0 [#/cm3]   SEN60
@@ -90,8 +90,8 @@ struct sen6x_values {
   float   Temp;           // Compensated Ambient Temperature [°C] SEN63C SEN65 SEN66 SEN68
   float   VOC;            // VOC Index SEN65 SEN66 SEN68
   float   NOX;            // NOx Index SEN65 SEN66 SEN68
-  uint16_t CO2;			  		// CO2 concentration [ppm]  SEN63C SEN66
-  float   HCHO;			  		// HCHO concentration [ppb] SEN68
+  uint16_t CO2;           // CO2 concentration [ppm]  SEN63C SEN66
+  float   HCHO;           // HCHO concentration [ppb] SEN68
 };
 
 struct sen6x_raw_values {
@@ -99,15 +99,15 @@ struct sen6x_raw_values {
   float    Temp;          // Compensated Ambient Temperature [°C] SEN63C SEN65 SEN66 SEN68
   uint16_t VOC;           // VOC Index SEN65 SEN66 SEN68
   uint16_t NOX;           // NOx Index SEN65 SEN66 SEN68
-  uint16_t CO2;			  		// CO2 concentration [ppm] SEN66
+  uint16_t CO2;           // CO2 concentration [ppm] SEN66
 };
 
 struct sen6x_concentration_values {
-  float   NumPM0;         // Number Concentration PM0.5 [#/cm3]	  ALL
-  float   NumPM1;         // Number Concentration PM1.0 [#/cm3]	  ALL
-  float   NumPM2;         // Number Concentration PM2.5 [#/cm3]	  ALL
-  float   NumPM4;         // Number Concentration PM4.0 [#/cm3]	  ALL
-  float   NumPM10;        // Number Concentration PM4.0 [#/cm3]	  ALL
+  float   NumPM0;         // Number Concentration PM0.5 [#/cm3]   ALL
+  float   NumPM1;         // Number Concentration PM1.0 [#/cm3]   ALL
+  float   NumPM2;         // Number Concentration PM2.5 [#/cm3]   ALL
+  float   NumPM4;         // Number Concentration PM4.0 [#/cm3]   ALL
+  float   NumPM10;        // Number Concentration PM4.0 [#/cm3]   ALL
 };
 
 /**
@@ -211,18 +211,18 @@ struct sen6x_tmp_comp {
  * refer to “Temperature Acceleration and Compensation Instructions for SEN6x” [3].
  */
 struct sen6x_RHT_comp {
-	
-	// Filter constant K scaled with factor 10 (K = value / 10)
-	uint16_t K;
-	
-	// Filter constant P scaled with factor 10 (P = value / 10).
-	uint16_t P;
-	
-	// Time constant T1 scaled with factor 10 (T1 [s] = value / 10)
-	uint16_t T1;
-	
-	// Time constant T2 scaled with factor 10 (T2 [s] = value / 10).
-	uint16_t T2;	
+  
+  // Filter constant K scaled with factor 10 (K = value / 10)
+  uint16_t K;
+
+  // Filter constant P scaled with factor 10 (P = value / 10).
+  uint16_t P;
+  
+  // Time constant T1 scaled with factor 10 (T1 [s] = value / 10)
+  uint16_t T1;
+  
+  // Time constant T2 scaled with factor 10 (T2 [s] = value / 10).
+  uint16_t T2;  
 }; 
 
 #ifndef SMALLFOOTPRINT
@@ -240,12 +240,12 @@ struct sen6x_RHT_comp {
  * Define Sen6x device
  */
 enum SEN6x_device {
-	SEN60 = 0,
-	SEN63 = 1,
-	SEN63C = SEN63,
-	SEN65 = 2,
-	SEN66 = 3,
-	SEN68 = 4
+  SEN60 = 0,
+  SEN63 = 1,
+  SEN63C = SEN63,
+  SEN65 = 2,
+  SEN66 = 3,
+  SEN68 = 4
 };
 
 /**
@@ -260,7 +260,7 @@ enum SEN6x_status {
   STATUS_CO2_2_ERROR_6x =             0x0020,
   STATUS_CO2_1_ERROR_6x =             0x0040,
   STATUS_HCHO_ERROR_6x =              0x0080,
-  STATUS_PM_ERROR_6x =     	          0x0100
+  STATUS_PM_ERROR_6x =                0x0100
 };
 
 /**
@@ -270,30 +270,30 @@ enum SEN6x_status {
  * KEEP IN SYNC WITH SEN6xCommandOpCode[][]
  */
 enum Sen6x_Comds_offset {
-	SEN6x_START_MEASUREMENT = 0,
-	SEN6x_STOP_MEASUREMENT,
-	SEN6x_READ_DATA_RDY_FLAG,
-	SEN6x_READ_MEASURED_VALUE,
-	SEN6x_READ_RAW_VALUE,
-	SEN6x_NUM_CONC_VALUES,
-	SEN6x_TEMP_OFFSET,
-	SEN6x_TEMP_ACC_PARAM,
-	SEN6x_READ_PRODUCT_NAME,
-	SEN6x_READ_SERIAL_NUMBER,
-	SEN6x_READ_VERSION,
-	SEN6x_READ_DEVICE_REGISTER,
-	SEN6x_RD_CL_DEVICE_REGISTER,
-	SEN6x_RESET,
-	SEN6x_START_FAN_CLEANING,
-	SEN6x_ACTIVATE_SHT_HEATER,
-	SEN6x_GET_SET_VOC_TUNING,
-	SEN6x_GET_SET_VOC_STATE,
-	SEN6x_GET_SET_NOX_TUNING,
-	SEN6x_FORCE_C02_CAL,
-	SEN6x_GET_SET_C02_CAL,
-	SEN6x_GET_SET_AMBIENT_PRESS,
-	SEN6x_GET_SET_ALTITUDE
-	/** expect something for the H2HO in the near future */
+  SEN6x_START_MEASUREMENT = 0,
+  SEN6x_STOP_MEASUREMENT,
+  SEN6x_READ_DATA_RDY_FLAG,
+  SEN6x_READ_MEASURED_VALUE,
+  SEN6x_READ_RAW_VALUE,
+  SEN6x_NUM_CONC_VALUES,
+  SEN6x_TEMP_OFFSET,
+  SEN6x_TEMP_ACC_PARAM,
+  SEN6x_READ_PRODUCT_NAME,
+  SEN6x_READ_SERIAL_NUMBER,
+  SEN6x_READ_VERSION,
+  SEN6x_READ_DEVICE_REGISTER,
+  SEN6x_RD_CL_DEVICE_REGISTER,
+  SEN6x_RESET,
+  SEN6x_START_FAN_CLEANING,
+  SEN6x_ACTIVATE_SHT_HEATER,
+  SEN6x_GET_SET_VOC_TUNING,
+  SEN6x_GET_SET_VOC_STATE,
+  SEN6x_GET_SET_NOX_TUNING,
+  SEN6x_FORCE_C02_CAL,
+  SEN6x_GET_SET_C02_CAL,
+  SEN6x_GET_SET_AMBIENT_PRESS,
+  SEN6x_GET_SET_ALTITUDE
+ /** expect something for the H2HO in the near future */
 };
 
 /**
@@ -335,18 +335,18 @@ class SEN6x
      */
     void SetDevice(SEN6x_device d);
 
-		/**
-		 * @brief : Get device will return the device used by library.
-		 * 
-		 * @return :
+    /**
+     * @brief : Get device will return the device used by library.
+     * 
+     * @return :
      * SEN60, SEN63, SEN65, SEN66 or SEN68
      * 
      * detected : 
      *  true  : device was autodetected 
-		 *  false : device was set (either hardcoded or by sketch)
-		 * 
-		 * Applies to: SEN60, SEN63C, SEN65, SEN66, SEN68
-		 */
+     *  false : device was set (either hardcoded or by sketch)
+     * 
+     * Applies to: SEN60, SEN63C, SEN65, SEN66, SEN68
+     */
     uint8_t GetDevice(bool *detected);
    
     /**
@@ -380,8 +380,8 @@ class SEN6x
      * 
      * Applies to: SEN60, SEN63C, SEN65, SEN66, SEN68
      */
-    bool probe();	
-    bool reset();		
+    bool probe(); 
+    bool reset();   
     bool start();
     bool stop();
     bool clean();
@@ -424,13 +424,13 @@ class SEN6x
      *
      * @param  *status
      *  return status as an 'or':
-	   * STATUS_OK_6x = 0,
+     * STATUS_OK_6x = 0,
      * STATUS_SPEED_ERROR_6x =     0x0001,
      * STATUS_FAN_ERROR_6x =       0x0004,
      * STATUS_GAS_ERROR_6x =       0x0008, 
      * STATUS_RHT_ERROR_6x =       0x0010,
-     * STATUS_CO2_2_ERROR_6x =     0x0020,	// SEN63C, SEN66
-     * STATUS_CO2_1_ERROR_6x =     0x0040,	// SEN63C, SEN66
+     * STATUS_CO2_2_ERROR_6x =     0x0020,  // SEN63C, SEN66
+     * STATUS_CO2_1_ERROR_6x =     0x0040,  // SEN63C, SEN66
      * STATUS_HCHO_ERROR_6x =      0x0080,  // SEN68
      * STATUS_PM_ERROR_6x =        0x0100
      * 
@@ -441,16 +441,16 @@ class SEN6x
      * Applies to: SEN60, SEN63C, SEN65, SEN66, SEN68
      */
     uint8_t GetStatusReg(uint16_t *status);
-		
-		/**
-		 * @brief : check for data ready
-		 *
-		 * @return
-		 *  true  if available
-		 *  false if not
-		 * 
-		 * Applies to: SEN60, SEN63C, SEN65, SEN66, SEN68
-		 */
+    
+    /**
+     * @brief : check for data ready
+     *
+     * @return
+     *  true  if available
+     *  false if not
+     * 
+     * Applies to: SEN60, SEN63C, SEN65, SEN66, SEN68
+     */
     bool Check_data_ready();
     
     /**
@@ -475,14 +475,14 @@ class SEN6x
      * 
      * Applies to: SEN60, SEN63C, SEN65, SEN66, SEN68
      */
-		uint8_t GetConcentration(struct sen6x_concentration_values *v);
-	
-		/**
-		 * @brief : retrieve Raw values from SEN6x
-		 * 
-		 * Applies to: SEN63C, SEN65, SEN66, SEN68
-		 */
-		uint8_t GetRawValues(struct sen6x_raw_values *v);
+    uint8_t GetConcentration(struct sen6x_concentration_values *v);
+  
+    /**
+     * @brief : retrieve Raw values from SEN6x
+     * 
+     * Applies to: SEN63C, SEN65, SEN66, SEN68
+     */
+    uint8_t GetRawValues(struct sen6x_raw_values *v);
     
     /**
      * @brief : save or restore the VOC algorithm 
@@ -545,23 +545,23 @@ class SEN6x
      */ 
     uint8_t SetTmpComp(sen6x_tmp_comp *tmp);
 
-		/**
-		 * @brief : This command allows you to use the inbuilt heater 
-		 * in SHT sensor to reverse creep at high humidity.
-		 * 
-		 * This command activates the SHT sensor heater with 200mW for 1s. 
-		 * The heater is then automatically deactivated again.
-		 * 
-		 * Wait at least 20s after this command before starting a measurement 
-		 * to get coherent temperature values (heating consequence to disappear).
-		 * 
-		 * @return :
+    /**
+     * @brief : This command allows you to use the inbuilt heater 
+     * in SHT sensor to reverse creep at high humidity.
+     * 
+     * This command activates the SHT sensor heater with 200mW for 1s. 
+     * The heater is then automatically deactivated again.
+     * 
+     * Wait at least 20s after this command before starting a measurement 
+     * to get coherent temperature values (heating consequence to disappear).
+     * 
+     * @return :
      * True  : all OK
      * false : error
-		 * 
-		 * Applies to: SEN63C, SEN65, SEN66, SEN68
-		 */
-		 bool ActivateSHTHeater();
+     * 
+     * Applies to: SEN63C, SEN65, SEN66, SEN68
+     */
+     bool ActivateSHTHeater();
 
     /**
      * @brief : This command allows to set custom temperature acceleration 
@@ -581,91 +581,91 @@ class SEN6x
      */ 
     uint8_t SetTempAccelMode(sen6x_RHT_comp *val); 
   
-		/**
-		 * @brief : Execute the forced recalibration (FRC) of the CO2 signal. 
-		 * See the datasheet of the SCD4x sensor for details how the forced recalibration shall be used [6].
-		 * 
-		 * Note: After power-on wait at least 1000 ms and after stopping a measurement 600 ms before sending 
-		 * this command. The recalibration procedure will take about 500 ms to complete, during which time no 
-		 * other functions can be executed.
-		 * 
-		 * 
-		 * @return :
+    /**
+     * @brief : Execute the forced recalibration (FRC) of the CO2 signal. 
+     * See the datasheet of the SCD4x sensor for details how the forced recalibration shall be used [6].
+     * 
+     * Note: After power-on wait at least 1000 ms and after stopping a measurement 600 ms before sending 
+     * this command. The recalibration procedure will take about 500 ms to complete, during which time no 
+     * other functions can be executed.
+     * 
+     * 
+     * @return :
      * SEN6x_ERR_OK : all OK
      * else error
      * 
-		 * Applies to: SEN63C, SEN66
-		 */
-		uint8_t ForceCO2Recal(uint16_t *val);
+     * Applies to: SEN63C, SEN66
+     */
+    uint8_t ForceCO2Recal(uint16_t *val);
 
-		/**
-		 * @brief : Gets the status of the CO2 sensor automatic self-calibration (ASC). The CO2 sensor supports
-		 * automatic self-calibration (ASC) for long-term stability of the CO2 output. 
-		 * This feature can be enabled or disabled. By default, it is enabled.
-		 * 
-		 * This configuration is volatile, i.e. the parameter will be reverted to its default value after a device reset.
-		 * 
-		 * @return :
+    /**
+     * @brief : Gets the status of the CO2 sensor automatic self-calibration (ASC). The CO2 sensor supports
+     * automatic self-calibration (ASC) for long-term stability of the CO2 output. 
+     * This feature can be enabled or disabled. By default, it is enabled.
+     * 
+     * This configuration is volatile, i.e. the parameter will be reverted to its default value after a device reset.
+     * 
+     * @return :
      * SEN6x_ERR_OK : all OK
      * else error
      * 
-		 * Applies to: SEN63C, SEN66
-		 */
-		uint8_t GetCo2SelfCalibratrion(bool *val);
-		uint8_t SetCo2SelfCalibratrion(bool val);	
-	
-		/**
-		 * @brief : Get or set Ambient Pressure
-		 * 
-		 * Description: GET
-		 * Gets the ambient pressure value. The ambient pressure can be used for pressure 
-		 * compensation in the CO2 sensor.
-		 * 
-		 * Description: SET
-		 * Sets the ambient pressure value. The ambient pressure can be used for pressure 
-		 * compensation in the CO2 sensor. Setting an ambient pressure overrides any pressure 
-		 * compensation based on a previously set sensor altitude. 
-		 * Use of this command is recommended for applications experiencing significant 
-		 * ambient pressure changes to ensure CO2 sensor accuracy. 
-		 * 
-		 * Valid input values are between 700 to 1’200 hPa. The default value is 1013 hPa.
-		 * 
-		 * This configuration is volatile, i.e. the parameter will be reverted to its default value after a device reset.
-		 * 
-		 * @return :
+     * Applies to: SEN63C, SEN66
+     */
+    uint8_t GetCo2SelfCalibratrion(bool *val);
+    uint8_t SetCo2SelfCalibratrion(bool val); 
+  
+    /**
+     * @brief : Get or set Ambient Pressure
+     * 
+     * Description: GET
+     * Gets the ambient pressure value. The ambient pressure can be used for pressure 
+     * compensation in the CO2 sensor.
+     * 
+     * Description: SET
+     * Sets the ambient pressure value. The ambient pressure can be used for pressure 
+     * compensation in the CO2 sensor. Setting an ambient pressure overrides any pressure 
+     * compensation based on a previously set sensor altitude. 
+     * Use of this command is recommended for applications experiencing significant 
+     * ambient pressure changes to ensure CO2 sensor accuracy. 
+     * 
+     * Valid input values are between 700 to 1’200 hPa. The default value is 1013 hPa.
+     * 
+     * This configuration is volatile, i.e. the parameter will be reverted to its default value after a device reset.
+     * 
+     * @return :
      * SEN6x_ERR_OK : all OK
      * else error
-		 * 
-		 * Applies to: SEN63C, SEN66
-		 */ 
-		 uint8_t GetAmbientPressure(uint16_t *val);
-		 uint8_t SetAmbientPressure(uint16_t val);
+     * 
+     * Applies to: SEN63C, SEN66
+     */ 
+     uint8_t GetAmbientPressure(uint16_t *val);
+     uint8_t SetAmbientPressure(uint16_t val);
 
-		/**
-		 *	@brief : Get or set Altitude
-		 * 
-		 * Description: get 
-		 * Gets the current sensor altitude. The sensor altitude 
-		 * can be used for pressure compensation in the CO2 sensor.
-		 * 
-		 * Description: SET
-		 * Sets the current sensor altitude. The sensor altitude can be used 
-		 * for pressure compensation in the CO2 sensor. 
-		 * The default sensor altitude value is set to 0 meters above sea level. 
-		 * Valid input values are between 0 and 3000m.
-		 * 
-		 * This configuration is volatile, i.e. the parameter will be reverted to its default value after a device reset.
-		 * 
-		 * @return :
+    /**
+     *  @brief : Get or set Altitude
+     * 
+     * Description: get 
+     * Gets the current sensor altitude. The sensor altitude 
+     * can be used for pressure compensation in the CO2 sensor.
+     * 
+     * Description: SET
+     * Sets the current sensor altitude. The sensor altitude can be used 
+     * for pressure compensation in the CO2 sensor. 
+     * The default sensor altitude value is set to 0 meters above sea level. 
+     * Valid input values are between 0 and 3000m.
+     * 
+     * This configuration is volatile, i.e. the parameter will be reverted to its default value after a device reset.
+     * 
+     * @return :
      * SEN6x_ERR_OK : all OK
      * else error
-		 * 
-		 * Applies to: SEN63C, SEN66
-		 */ 
-		 uint8_t GetAltitude(uint16_t *val);
-		 uint8_t SetAltitude(uint16_t val);
+     * 
+     * Applies to: SEN63C, SEN66
+     */ 
+     uint8_t GetAltitude(uint16_t *val);
+     uint8_t SetAltitude(uint16_t val);
 
-	 
+   
   private:
     /** debug */
     void DebugPrintf(const char *pcFmt, ...);
@@ -678,14 +678,14 @@ class SEN6x
     uint8_t _Receive_BUF_Length;
     uint8_t _Send_BUF_Length;
     SEN6x_device _device;
-    bool _deviceDetected;								// true : device was automatically detected
-    bool _restart;											// whether to restart after executing command
+    bool _deviceDetected;               // true : device was automatically detected
+    bool _restart;                      // whether to restart after executing command
     bool _started;                      // indicate the measurement has started
     uint8_t _FW_Major, _FW_Minor;       // holds sensor firmware level
     
     uint32_t data32;                    // pass data to i2c_fill_buffer
     uint16_t data16;
-    uint8_t _I2CAddress;								// which _i2Caddress to use (SEn60 or SEN6x)
+    uint8_t _I2CAddress;                // which _i2Caddress to use (SEn60 or SEN6x)
     
     /** shared supporting routines */
     bool FWCheck(uint8_t major, uint8_t minor); 
@@ -693,7 +693,7 @@ class SEN6x
 
     bool CheckStarted();
     bool CheckRestart();
-		bool DetectDevice();
+    bool DetectDevice();
     
     /** translate/transform */
     typedef union {
