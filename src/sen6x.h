@@ -17,7 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  **********************************************************************
- * Version DRAFT 1.3 / December 2024 
+ * Version DRAFT 1.4 / December 2024 
  * - Initial version by paulvha
  *********************************************************************
 */
@@ -30,7 +30,7 @@
  * library version levels
  */
 #define DRIVER_MAJOR_6x 1
-#define DRIVER_MINOR_6x 3
+#define DRIVER_MINOR_6x 4
 
 /**
  * select default debug serial
@@ -309,7 +309,6 @@ enum Sen6x_Comds_offset {
 #define SEN6x_ERR_TIMEOUT             0x50
 #define SEN6x_ERR_PROTOCOL            0x51
 #define SEN6x_ERR_FIRMWARE            0x88
-
 
 // Receive buffer length.
 // in case of name / serial number the max is 32 + 16 CRC = 48
@@ -685,11 +684,15 @@ class SEN6x
     
     uint32_t data32;                    // pass data to i2c_fill_buffer
     uint16_t data16;
-    uint8_t _I2CAddress;                // which _i2Caddress to use (SEn60 or SEN6x)
+    uint8_t _I2CAddress;                // which _i2Caddress to use (SEN60 or SEN6x)
+    
+    uint16_t cmd;
     
     /** shared supporting routines */
     bool FWCheck(uint8_t major, uint8_t minor); 
     uint16_t LookupCommand(Sen6x_Comds_offset cmd);
+    bool SetCommand(Sen6x_Comds_offset req);
+    bool SendCommand(Sen6x_Comds_offset req);
 
     bool CheckStarted();
     bool CheckRestart();

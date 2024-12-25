@@ -20,7 +20,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  **********************************************************************
- * Version DRAFT 1.3 / December 2024 /paulvha
+ * Version DRAFT 1.4 / December 2024 /paulvha
  * - Initial version 
  *
  *********************************************************************
@@ -125,6 +125,7 @@ bool SEN6x::DetectDevice()
    * such I have not been able to test this.*/
    
   // not sure name is SEN63 or SEN63C, so only take first 5 characters 
+  // maybe correct later
   strncpy(needle,(char*) _Receive_BUF,5);
 
   if (strcmp(needle,"SEN63") == 0) {_device = SEN63; return(true);}
@@ -132,6 +133,7 @@ bool SEN6x::DetectDevice()
   else if (strcmp(needle,"SEN66") == 0) {_device = SEN66; return(true);}
   else if (strcmp(needle,"SEN68") == 0) {_device = SEN68; return(true);}
   
+  // no match
   return(false);
 }
 
@@ -249,10 +251,7 @@ uint8_t SEN6x::GetStatusReg(uint16_t *status)
   // check for minimum Firmware level ???????
   if(! FWCheck(2,0)) return(SEN6x_ERR_FIRMWARE);
 
-  uint16_t cmd  = LookupCommand(SEN6x_READ_DEVICE_REGISTER);
-  if (cmd == 0x0000 ) return(SEN6x_ERR_UNKNOWNCMD);
-  
-  I2C_fill_buffer(cmd);
+  if (! SetCommand(SEN6x_READ_DEVICE_REGISTER)) return(SEN6x_ERR_UNKNOWNCMD);
 
   if (_device == SEN60 ){
     
@@ -288,12 +287,8 @@ uint8_t SEN6x::GetStatusReg(uint16_t *status)
 
 bool SEN6x::reset() 
 {
-  uint16_t cmd  = LookupCommand(SEN6x_RESET);
-  if (cmd == 0x0000 ) return(SEN6x_ERR_UNKNOWNCMD);
+  if ( ! SendCommand(SEN6x_RESET)) return(false);
   
-  I2C_fill_buffer(cmd);
-
-  if (I2C_SetPointer() != SEN6x_ERR_OK) return(false);
   _started = false;
   
   delay(500); //support for UNOR4 (else it will fail)
@@ -307,12 +302,7 @@ bool SEN6x::start()
 {
   if (_started) return(true);
   
-  uint16_t cmd  = LookupCommand(SEN6x_START_MEASUREMENT);
-  if (cmd == 0x0000 ) return(SEN6x_ERR_UNKNOWNCMD);
-  
-  I2C_fill_buffer(cmd);
-
-  if (I2C_SetPointer() != SEN6x_ERR_OK) return(false);
+  if ( ! SendCommand(SEN6x_START_MEASUREMENT)) return(false);
   
   _started = true;
   
@@ -325,40 +315,78 @@ bool SEN6x::stop()
 {
   if (! _started) return(true);
   
-  uint16_t cmd  = LookupCommand(SEN6x_STOP_MEASUREMENT);
-  if (cmd == 0x0000 ) return(SEN6x_ERR_UNKNOWNCMD);
-  
-  I2C_fill_buffer(cmd);
-
-  if (I2C_SetPointer() != SEN6x_ERR_OK) return(false);
+  if ( ! SendCommand(SEN6x_STOP_MEASUREMENT)) return(false);
 
   _started = false;
+
+  return(true);
+}
+
+/**
+ * set the opcode for the command for the sensor type
+ * 
+ @return
+ * true : connected sensor supports the function 
+ * false : connected sensor does NOT support
+ */
+bool SEN6x::SetCommand(Sen6x_Comds_offset req){
+ 
+  cmd  = LookupCommand(req);
+  if (cmd == 0x0000 ) return(false); 
+  
+  I2C_fill_buffer(cmd);
   
   return(true);
 }
 
+/**
+ * Get the opcode for the command for the sensor type
+ * 
+ @return
+ * true : connected sensor supports the function 
+ * false : connected sensor does NOT support
+ */
+uint16_t SEN6x::LookupCommand(Sen6x_Comds_offset cmd){
+  return(SEN6xCommandOpCode[_device][cmd]);
+}
+
+/**
+ * lookup opcode and send the command
+ * @return
+ * true : succesful
+ * false : failure
+ */
+bool SEN6x::SendCommand(Sen6x_Comds_offset req)
+{
+  if ( SetCommand(req) ) {
+    if (I2C_SetPointer() == SEN6x_ERR_OK) return(true);
+  }
+  
+  return(false);
+}
+
+/**
+ * perform a clean (extra fan speed). 
+ * One should wait for clean to finish, but there is no
+ * indication that clean is in progress.
+ * the datasheet indicates :
+ * 
+ * The fan is set to the maximum speed for 10 seconds and
+ * then automatically stopped. 
+ * 
+ * Wait at least 10s after this command before starting a measurement.
+ * 
+ */
 bool SEN6x::clean()
 {
-  if (_started) //??????????????????????????????????????/
-  {
-    // according to datasheet not during measurement
-    if (! stop()){
-      DebugPrintf("ERROR: Could not stop measurement\n");
-      return(false);
-    }
-    
-    // give some time to stop
-    delay(500);
-  }
-
-  uint16_t cmd  = LookupCommand(SEN6x_START_FAN_CLEANING);
-  if (cmd == 0x0000 ) return(SEN6x_ERR_UNKNOWNCMD);
+  // CAN NOT be done when measuring
+  if (! CheckStarted()) return(false);
   
-  I2C_fill_buffer(cmd);
+  bool ret = SendCommand(SEN6x_START_FAN_CLEANING);
+  
+  if (! CheckRestart()) return(false);
 
-  if (I2C_SetPointer() != SEN6x_ERR_OK) return(false);
-
-  return(true);
+  return(ret);
 }
 
 /**
@@ -378,16 +406,14 @@ bool SEN6x::clean()
  */
 bool SEN6x::ActivateSHTHeater()
 {
-  // should NOT be done during measurement ????
+  // CAN NOT be done when measuring
+  if (! CheckStarted()) return(false);
   
-  uint16_t cmd  = LookupCommand(SEN6x_ACTIVATE_SHT_HEATER);
-  if (cmd == 0x0000 ) return(SEN6x_ERR_UNKNOWNCMD);
-
-  I2C_fill_buffer(cmd);
-
-  if (I2C_SetPointer() != SEN6x_ERR_OK) return(false);
-
-  return(true);
+  bool ret = SendCommand(SEN6x_ACTIVATE_SHT_HEATER);
+  
+  if (! CheckRestart()) return(false);
+  
+  return(ret);
 }
   
 /**
@@ -406,10 +432,7 @@ uint8_t SEN6x::GetVersion(struct sen6x_version *v)
 
   memset(v, 0x0, sizeof(struct sen6x_version));
   
-  uint16_t cmd  = LookupCommand(SEN6x_READ_VERSION);
-  if (cmd == 0x0000 ) return(SEN6x_ERR_UNKNOWNCMD);
-
-  I2C_fill_buffer(cmd);
+  if (! SetCommand(SEN6x_READ_VERSION)) return(SEN6x_ERR_UNKNOWNCMD);
 
   ret = I2C_SetPointer_Read(8);
 
@@ -432,13 +455,6 @@ uint8_t SEN6x::GetVersion(struct sen6x_version *v)
   return(ret);
 }
 
-/**
- * Get the opcode for the command for the sensor type
- * if 0x0000 is returned the command is not available for this device
- */
-uint16_t SEN6x::LookupCommand(Sen6x_Comds_offset cmd){
- return(SEN6xCommandOpCode[_device][cmd]);
-};
 
 /**
  * @brief Get Product name
@@ -455,9 +471,8 @@ uint8_t SEN6x::GetProductName(char *ser, uint8_t len)
   uint8_t ret = SEN6x_ERR_OK, i;
   char  s60[] = "SEN60";
    
-  uint16_t cmd  = LookupCommand(SEN6x_READ_PRODUCT_NAME);
+  if (! SetCommand(SEN6x_READ_PRODUCT_NAME) ) {
 
-  if (cmd == 0x0000 ) {
     // NO command to obtain productname for SEN60
     if(_device == SEN60) {
       for (i = 0; i < len, i < strlen(s60); i++) {
@@ -468,8 +483,6 @@ uint8_t SEN6x::GetProductName(char *ser, uint8_t len)
     else // who knows in the future ??
       return(SEN6x_ERR_UNKNOWNCMD);
   }
-  
-  I2C_fill_buffer(cmd);  
 
   // true = check zero termination
   ret =  I2C_SetPointer_Read(len,true);
@@ -498,13 +511,10 @@ uint8_t SEN6x::GetProductName(char *ser, uint8_t len)
  */
 uint8_t SEN6x::GetSerialNumber(char *ser, uint8_t len)
 {
-  uint8_t ret = SEN6x_ERR_OK,i;
+  uint8_t ret,i;
 
-  uint16_t cmd  = LookupCommand(SEN6x_READ_SERIAL_NUMBER);
-  if (cmd == 0x0000 ) return(SEN6x_ERR_UNKNOWNCMD);
+  if (! SetCommand(SEN6x_READ_SERIAL_NUMBER)) return(SEN6x_ERR_UNKNOWNCMD);
 
-  I2C_fill_buffer(cmd);  
-  
   // true = check zero termination
   ret =  I2C_SetPointer_Read(len,true);
   
@@ -537,7 +547,7 @@ uint8_t SEN6x::SetTempAccelMode(sen6x_RHT_comp *table)
   uint8_t ret;
   
   ret = I2C_fill_buffer(SEN6x_SET_TEMP_ACCEL, table);
-  if (ret == SEN6x_ERR_OK)   ret = I2C_SetPointer();
+  if (ret == SEN6x_ERR_OK) ret = I2C_SetPointer();
 
   return(ret);
 }
@@ -562,15 +572,12 @@ uint8_t SEN6x::SetTempAccelMode(sen6x_RHT_comp *table)
  */
 uint8_t SEN6x::GetVocAlgorithmState(uint8_t *table, uint8_t tablesize) {
   uint8_t ret;
-    
-  uint16_t cmd  = LookupCommand(SEN6x_GET_SET_VOC_STATE);
-  if (cmd == 0x0000 ) return(SEN6x_ERR_UNKNOWNCMD);
+  
+  if (! SetCommand(SEN6x_GET_SET_VOC_STATE)) return(SEN6x_ERR_UNKNOWNCMD);
   
   // Check for Voc Algorithm length
   if (tablesize < VOC_ALO_SIZE) return(SEN6x_ERR_PARAMETER);
   
-  I2C_fill_buffer(cmd); 
-
   ret = I2C_SetPointer_Read(VOC_ALO_SIZE);
 
   // save VOC data
@@ -592,8 +599,7 @@ uint8_t SEN6x::GetNoxAlgorithm(sen6x_xox *nox) {
   
   uint8_t ret;
   
-  uint16_t cmd  = LookupCommand(SEN6x_GET_SET_VOC_STATE);
-  if (cmd == 0x0000 ) return(SEN6x_ERR_UNKNOWNCMD);
+  if (! SetCommand(SEN6x_GET_SET_NOX_TUNING)) return(SEN6x_ERR_UNKNOWNCMD);
   
   if (! CheckStarted()) return(SEN6x_ERR_PROTOCOL);
   
@@ -614,10 +620,9 @@ uint8_t SEN6x::GetNoxAlgorithm(sen6x_xox *nox) {
 }
 
 /**
- * 
  * ONLY valid for SEN65, SEN66 and SEN68
  * 
- * @brief : Gets the parameters to customize the VOC algorithm. For more information on 
+ * @brief : Gets the parameters to customize the VOC algorithm tuning. For more information on 
  * what the parameters below do, refer to Sensirion’s VOC Index for Indoor Air Applications [4].
  * 
  * This configuration is volatile, i.e. the parameters will be reverted to their default 
@@ -626,13 +631,11 @@ uint8_t SEN6x::GetNoxAlgorithm(sen6x_xox *nox) {
 uint8_t SEN6x::GetVocAlgorithm(sen6x_xox *voc) {
   uint8_t ret;
   
-  uint16_t cmd  = LookupCommand(SEN6x_GET_SET_VOC_TUNING);
-  if (cmd == 0x0000 ) return(SEN6x_ERR_UNKNOWNCMD);
+  if (! SetCommand(SEN6x_GET_SET_VOC_TUNING)) return(SEN6x_ERR_UNKNOWNCMD);
   
   if (! CheckStarted()) return(SEN6x_ERR_PROTOCOL);
   
   I2C_fill_buffer(cmd);
-  
   ret = I2C_SetPointer_Read(12);
 
   voc->IndexOffset  = byte_to_int16_t(0) ;
@@ -648,7 +651,6 @@ uint8_t SEN6x::GetVocAlgorithm(sen6x_xox *voc) {
 }
 
 /**
- * 
  * only valid for SEN65, SEN66 and SEN68
  * 
  * @brief Allows setting of the VOC algorithm state to resume operation 
@@ -665,7 +667,7 @@ uint8_t SEN6x::SetVocAlgorithmState(uint8_t *table, uint8_t tablesize)
   
   if (! CheckStarted()) return(SEN6x_ERR_PROTOCOL);
   
-  ret = I2C_fill_buffer(SEN6x_SET_VOC_ALGO, table);
+  ret = I2C_fill_buffer(SEN6x_SET_VOC_STATE, table);
 
   if (ret == SEN6x_ERR_OK)   ret = I2C_SetPointer();
   
@@ -675,15 +677,11 @@ uint8_t SEN6x::SetVocAlgorithmState(uint8_t *table, uint8_t tablesize)
 }
 
 /**
- * 
  * only valid for SEN65, SEN66 and SEN68
  */ 
 uint8_t SEN6x::SetNoxAlgorithm(sen6x_xox *nox)
 {
   uint8_t ret;
-  
-  uint16_t cmd  = LookupCommand(SEN6x_GET_SET_NOX_TUNING);
-  if (cmd == 0x0000 ) return(SEN6x_ERR_UNKNOWNCMD);
   
   if (! CheckStarted()) return(SEN6x_ERR_PROTOCOL);
   
@@ -699,7 +697,7 @@ uint8_t SEN6x::SetNoxAlgorithm(sen6x_xox *nox)
   
   ret = I2C_fill_buffer(SEN6x_SET_NOX_TUNING, nox);
   
-  if (ret == SEN6x_ERR_OK)   ret = I2C_SetPointer();
+  if (ret == SEN6x_ERR_OK) ret = I2C_SetPointer();
     
   if (! CheckRestart()) return(SEN6x_ERR_PROTOCOL);
 
@@ -722,9 +720,6 @@ uint8_t SEN6x::SetVocAlgorithm(sen6x_xox *voc)
 {
   uint8_t ret;
 
-  uint16_t cmd  = LookupCommand(SEN6x_GET_SET_VOC_TUNING);
-  if (cmd == 0x0000 ) return(SEN6x_ERR_UNKNOWNCMD);
-  
   if (! CheckStarted()) return(SEN6x_ERR_PROTOCOL);
   
   // check limits (else default according to datasheet)
@@ -737,7 +732,7 @@ uint8_t SEN6x::SetVocAlgorithm(sen6x_xox *voc)
   
   ret = I2C_fill_buffer(SEN6x_SET_VOC_TUNING, voc);
   
-  if (ret == SEN6x_ERR_OK)   ret = I2C_SetPointer();
+  if (ret == SEN6x_ERR_OK) ret = I2C_SetPointer();
     
   if (! CheckRestart()) return(SEN6x_ERR_PROTOCOL);
 
@@ -758,9 +753,6 @@ uint8_t SEN6x::ForceCO2Recal(uint16_t *val)
 {
   uint8_t ret;
   
-  uint16_t cmd  = LookupCommand(SEN6x_GET_SET_VOC_TUNING);
-  if (cmd == 0x0000 ) return(SEN6x_ERR_UNKNOWNCMD);
-  
   if (! CheckStarted()) return(SEN6x_ERR_PROTOCOL);
 
   data16 = *val;
@@ -768,16 +760,18 @@ uint8_t SEN6x::ForceCO2Recal(uint16_t *val)
   // max wait time indicated
   delay(1000);
   
-  I2C_fill_buffer(SEN6x_SET_FORCE_C02_CAL);
+  ret = I2C_fill_buffer(SEN6x_SET_FORCE_C02_CAL);
   
-  // wait recalibration time
-  delay(1000);
+  if (ret == SEN6x_ERR_OK) {
+    // wait recalibration time
+    delay(1000);
   
-  // read result
-  ret = I2C_ReadToBuffer(2, false); 
+    // read result
+    ret = I2C_ReadToBuffer(2, false); 
   
-  if (ret == SEN6x_ERR_OK)  *val = byte_to_Uint16_t(0) ;
-
+    if (ret == SEN6x_ERR_OK)  *val = byte_to_Uint16_t(0) ;
+  }
+  
   if (! CheckRestart()) return(SEN6x_ERR_PROTOCOL);
 
   return(ret);
@@ -795,16 +789,14 @@ uint8_t SEN6x::ForceCO2Recal(uint16_t *val)
 uint8_t SEN6x::SetCo2SelfCalibratrion(bool val)
 {
   uint8_t ret;
-  
-  if (_device != SEN63C && _device != SEN66) return (SEN6x_ERR_PARAMETER);
-  
+
   if (! CheckStarted()) return(SEN6x_ERR_PROTOCOL);
 
   data16 = (uint16_t) val; 
   
-  I2C_fill_buffer(SEN6X_SET_SELF_CO2_CAL);
+  ret = I2C_fill_buffer(SEN6X_SET_SELF_CO2_CAL);
   
-  ret = I2C_SetPointer();
+  if (ret == SEN6x_ERR_OK) ret = I2C_SetPointer();
   
   if (! CheckRestart()) return(SEN6x_ERR_PROTOCOL);
 
@@ -824,21 +816,17 @@ uint8_t SEN6x::GetCo2SelfCalibratrion(bool *val)
 {  
   uint8_t ret;
   
-  uint16_t cmd  = LookupCommand(SEN6x_GET_SET_C02_CAL);
-  if (cmd == 0x0000 ) return(SEN6x_ERR_UNKNOWNCMD);
+  if (! SetCommand(SEN6x_GET_SET_C02_CAL)) return(SEN6x_ERR_UNKNOWNCMD);
  
   if (! CheckStarted()) return(SEN6x_ERR_PROTOCOL);
-
+  
   I2C_fill_buffer(cmd);
-
   ret = I2C_SetPointer_Read(2);
 
-  if( ret  == SEN6x_ERR_OK) {
-    
-    *val = (bool) _Receive_BUF[1];
+  if( ret == SEN6x_ERR_OK) *val = (bool) _Receive_BUF[1];
 
-    if (! CheckRestart()) return(SEN6x_ERR_PROTOCOL);
-  }
+  if (! CheckRestart()) return(SEN6x_ERR_PROTOCOL);
+  
   return(ret);
 }
 
@@ -857,11 +845,8 @@ uint8_t SEN6x::GetCo2SelfCalibratrion(bool *val)
 uint8_t SEN6x::GetAmbientPressure(uint16_t *val)
 {
   uint8_t ret;
-  
-  uint16_t cmd  = LookupCommand(SEN6x_GET_SET_AMBIENT_PRESS);
-  if (cmd == 0x0000 ) return(SEN6x_ERR_UNKNOWNCMD);
 
-  I2C_fill_buffer(cmd);
+  if (! SetCommand(SEN6x_GET_SET_AMBIENT_PRESS)) return(SEN6x_ERR_UNKNOWNCMD);
 
   ret = I2C_SetPointer_Read(2);
 
@@ -909,11 +894,14 @@ bool SEN6x::CheckStarted()
   
   if (_started)
   {
-    // according to datasheet not during measurement
     if (! stop()) {
       DebugPrintf("ERROR: Could not stop measurement\n");
       return(false);
     }
+       
+    // give some time to stop
+    delay(500);
+    
     _restart = true;
   }
   
@@ -931,11 +919,13 @@ bool SEN6x::CheckRestart()
 {
   if (_restart){
     
-    // according to datasheet not during measurement
     if (! start()) {
       DebugPrintf("ERROR: Could not (re)start measurement\n");
       return(false);
     }
+      
+    // give some time to start
+    delay(500);
     
     _restart = false;
   }
@@ -959,21 +949,16 @@ uint8_t SEN6x::GetAltitude(uint16_t *val)
 {
   uint8_t ret;
   
-  uint16_t cmd  = LookupCommand(SEN6x_GET_SET_ALTITUDE);
-  if (cmd == 0x0000 ) return(SEN6x_ERR_UNKNOWNCMD);
-
-  I2C_fill_buffer(cmd);
+  if (! SetCommand(SEN6x_GET_SET_ALTITUDE)) return(SEN6x_ERR_UNKNOWNCMD);
   
   if (! CheckStarted()) return(SEN6x_ERR_PROTOCOL);
-
+  
+  I2C_fill_buffer(cmd);
   ret = I2C_SetPointer_Read(2);
 
-  if( ret == SEN6x_ERR_OK) {
-    
-    *val = byte_to_Uint16_t(0);
+  if( ret == SEN6x_ERR_OK)  *val = byte_to_Uint16_t(0);
   
-    if (! CheckRestart()) return(SEN6x_ERR_PROTOCOL);
-  }
+  if (! CheckRestart()) return(SEN6x_ERR_PROTOCOL);
 
   return(ret);
 }
@@ -992,14 +977,21 @@ uint8_t SEN6x::GetAltitude(uint16_t *val)
  
 uint8_t SEN6x::SetAltitude(uint16_t val)
 {
+  uint8_t ret;
   
-  if (val > 3000) return (SEN6x_ERR_PARAMETER);
+  if (val > 3000) return(SEN6x_ERR_PARAMETER);
+  
+  if (! CheckStarted()) return(SEN6x_ERR_PROTOCOL);
   
   data16 = val;
+
+  ret = I2C_fill_buffer(SEN6X_SET_ALTITUDE);
   
-  I2C_fill_buffer(SEN6X_SET_ALTITUDE);
-  
-  return(I2C_SetPointer());
+  if (ret == SEN6x_ERR_OK)  ret = I2C_SetPointer();
+
+  if (! CheckRestart()) return(SEN6x_ERR_PROTOCOL);
+
+  return(ret);
 }
 
 /**
@@ -1036,7 +1028,7 @@ void SEN6x::GetErrDescription(uint8_t code, char *buf, int len)
 {
 
 #if defined SMALLFOOTPRINT
-  strncpy(buf, "Error-info not disabled", len);
+  strncpy(buf, "SmallFootprint: Info not enabled", len);
 #else
   int i=0;
 
@@ -1074,10 +1066,7 @@ uint8_t SEN6x::GetValues(struct sen6x_values *v)
     }
   }
 
-  uint16_t cmd  = LookupCommand(SEN6x_READ_MEASURED_VALUE);
-  if (cmd == 0x0000 ) return(SEN6x_ERR_UNKNOWNCMD);
-
-  I2C_fill_buffer(cmd);
+  if (! SetCommand(SEN6x_READ_MEASURED_VALUE)) return(SEN6x_ERR_UNKNOWNCMD);
 
   if (_device == SEN60 )     len = 18;
   else if(_device == SEN63C ) len = 14;
@@ -1147,10 +1136,7 @@ uint8_t SEN6x::GetRawValues(struct sen6x_raw_values *v)
 
   memset(v,0x0,sizeof(struct sen6x_raw_values));
 
-  uint16_t cmd  = LookupCommand(SEN6x_READ_RAW_VALUE);
-  if (cmd == 0x0000 ) return(SEN6x_ERR_UNKNOWNCMD);
-
-  I2C_fill_buffer(cmd);
+  if (! SetCommand(SEN6x_READ_RAW_VALUE)) return(SEN6x_ERR_UNKNOWNCMD);
   
   // measurement started already?
   if (!_started) {
@@ -1165,6 +1151,7 @@ uint8_t SEN6x::GetRawValues(struct sen6x_raw_values *v)
   else if(_device == SEN66) len = 10;
   else len = 8;
   
+  I2C_fill_buffer(cmd);
   ret = I2C_SetPointer_Read(len);
   
   if (ret != SEN6x_ERR_OK) return (ret);
@@ -1201,6 +1188,8 @@ uint8_t SEN6x::GetConcentration(struct sen6x_concentration_values *v)
   
   memset(v,0x0,sizeof(struct sen6x_concentration_values));
   
+  if (! SetCommand(SEN6x_NUM_CONC_VALUES)) return(SEN6x_ERR_UNKNOWNCMD);
+  
   // measurement started already?
   if (!_started) {
     if (! start()) {
@@ -1208,17 +1197,13 @@ uint8_t SEN6x::GetConcentration(struct sen6x_concentration_values *v)
       return(SEN6x_ERR_CMDSTATE);
     }
   }
-
-  uint16_t cmd  = LookupCommand(SEN6x_NUM_CONC_VALUES);
-  if (cmd == 0x0000 ) return(SEN6x_ERR_UNKNOWNCMD);
-
-  I2C_fill_buffer(cmd);
   
   if (_device == SEN60 ) {
       len = 18;
       offset = 8;
   }
   
+  I2C_fill_buffer(cmd);
   ret = I2C_SetPointer_Read(len);
 
   if (ret == SEN6x_ERR_OK) {
@@ -1301,6 +1286,8 @@ void SEN6x::I2C_init()
  * @param cmd: I2C commmand
  * @param interval (optional): value to set for a set-command
  *
+ * @return
+ * SEN6x_ERR_UNKNOWNCMD : command not supported by device
  */
 uint8_t SEN6x::I2C_fill_buffer(uint16_t cmnd, void *val)
 {
@@ -1317,7 +1304,7 @@ uint8_t SEN6x::I2C_fill_buffer(uint16_t cmnd, void *val)
   
   switch(cmnd) {
    
-    case SEN6x_SET_VOC_ALGO:
+    case SEN6x_SET_VOC_STATE:
       cmd  = LookupCommand(SEN6x_GET_SET_VOC_STATE );
       if (cmd == 0x0000 ) return(SEN6x_ERR_UNKNOWNCMD);
       _Send_BUF[i++] = cmd >> 8 & 0xff;   //0 MSB
@@ -1435,7 +1422,6 @@ uint8_t SEN6x::I2C_fill_buffer(uint16_t cmnd, void *val)
        if (cmd == 0x0000 ) return(SEN6x_ERR_UNKNOWNCMD);
       _Send_BUF[i++] = cmd >> 8 & 0xff;   //0 MSB
       _Send_BUF[i++] = cmd & 0xff;        //1 LSB    
-
         
        // add data
       _Send_BUF[i++] = data16 >>8 & 0xff;          //2 MSB
@@ -1487,6 +1473,8 @@ uint8_t SEN6x::I2C_fill_buffer(uint16_t cmnd, void *val)
   }
 
  _Send_BUF_Length = i;
+ 
+  return(SEN6x_ERR_OK);
 }
 
 /**
@@ -1514,9 +1502,7 @@ uint8_t SEN6x::I2C_SetPointer()
     DebugPrintf("\n");
   }
   
-  if(_device == SEN60) _i2cPort->beginTransmission(_I2CAddress);
-  else _i2cPort->beginTransmission(_I2CAddress);
-  
+  _i2cPort->beginTransmission(_I2CAddress);
   _i2cPort->write(_Send_BUF, _Send_BUF_Length);
   _i2cPort->endTransmission();
 
@@ -1605,7 +1591,7 @@ uint8_t SEN6x::I2C_ReadToBuffer(uint8_t count, bool chk_zero)
   while (_i2cPort->available()) {  // read all
 
     data[i++] = _i2cPort->read();
-DebugPrintf("data 0x%02X\n", data[i-1]);
+//DebugPrintf("data 0x%02X\n", data[i-1]);
     // 2 bytes RH, 1 CRC
     if( i == 3) {
 
@@ -1661,6 +1647,8 @@ DebugPrintf("data 0x%02X\n", data[i-1]);
  */
 bool SEN6x::Check_data_ready()
 {
+  if (! SetCommand(SEN6x_READ_DATA_RDY_FLAG)) return(false);
+
   if (!_started) {
     
     if(! start()) {
@@ -1671,12 +1659,8 @@ bool SEN6x::Check_data_ready()
     // give time to start
     delay(1000);
   }
-  
-  uint16_t cmd  = LookupCommand(SEN6x_READ_DATA_RDY_FLAG );
-  if (cmd == 0x0000 ) return(SEN6x_ERR_UNKNOWNCMD);
- 
+
   I2C_fill_buffer(cmd);
-    
   if (I2C_SetPointer_Read(2) != SEN6x_ERR_OK) return(false);
   
   if (_Receive_BUF[1] == 1) return(true);

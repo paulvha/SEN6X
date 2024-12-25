@@ -2,7 +2,7 @@
  * This file contains an overview of the commands for the different
  * SEN6x sensors. a 0x0000 means the command is not supported
  * 
- * Version DRAFT 1.3 / December 2024 /paulvha
+ * Version DRAFT 1.4 / December 2024 /paulvha
  * - Initial version
  */
  
@@ -151,7 +151,7 @@ uint16_t SEN6xCommandOpCode [5][SEN6x_GET_SET_ALTITUDE +1] =
 };
 
 // Write helpers
-#define SEN6x_SET_VOC_ALGO            0x55FF
+#define SEN6x_SET_VOC_STATE           0x55FF
 #define SEN6x_SET_NOX_TUNING          0x55FE
 #define SEN6x_SET_TEMP_COMP           0x55FD
 #define SEN6x_SET_TEMP_ACCEL          0x55FC
