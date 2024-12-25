@@ -54,7 +54,23 @@
  *  8 INT
  *  
  *  Pull-up resistors to 5V
+ * 
+ *  OR ...in case you only have a 3v3 device then use a level converter
  *  
+ *  CCS811             Lvl convert     UNOR4 (Wire)
+ *                    | HV        |--- +5V
+ *    VIN  -----------| LV        |--- +3.3V
+ *                    |           |
+ *    GND  -----------| GND       |
+ *    SDA  -----------| LV <-> HV |--- SDA
+ *    SCL  -----------| LV <-> HV |--- SCL
+ *    WAKE --------------------------- GND
+ *    RST
+ *    INT 
+ *  
+ *  During test the CCS811 would jump high by even touching the wires (especially SCL-line). I suspect
+ *  that because I used a cheap board (CJMCU8118) the lines are quickly to long. Hence I connected with 
+ *  a level converter the CCS-811. It then worked stable. 
  *  ================================ Disclaimer ======================================
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -87,8 +103,8 @@ const SEN6x_device Device = SEN66;
 /////////////////////////////////////////////////////////////
 // define communication address to use for CCS811
 /////////////////////////////////////////////////////////////
-//#define CCS811_ADDR 0x5B //Default I2C Address
-#define CCS811_ADDR 0x5A //Alternate I2C Address
+#define CCS811_ADDR 0x5A // Default I2C Address
+//#define CCS811_ADDR 0x5B //Alternate I2C Address
 
 /////////////////////////////////////////////////////////////
 /* define driver debug
@@ -115,7 +131,21 @@ void setup() {
   serialTrigger((char *) "SEN6x-Example3 (DRAFT): Display SEN6x and CCS811. press <enter> to start");
 
   Serial.println(F("Trying to connect."));
+
+  /////////////////////////// CCS811  //////////////////////
+
+  WIRE_ccs811.begin();
   
+  // Initialize CCS811 library
+  if (! mySensor.begin(CCS811_ADDR,&WIRE_ccs811)){
+    Serial.println( "could not start CCS811. Freeze");
+    while(1);    
+  }
+  else
+  {
+    Serial.println(F("Connected CCS811."));
+  }
+ 
   /////////////////////////// SEN6x //////////////////////
   
   // set library debug level
@@ -145,20 +175,6 @@ void setup() {
   if (! sen6x.reset()) {
     Serial.println(F("could not reset sen6x."));
     while(1);
-  }
-
-  /////////////////////////// CCS811  //////////////////////
-
-  WIRE_ccs811.begin();
-  
-  // Initialize CCS811 library
-  if (! mySensor.begin(CCS811_ADDR,&WIRE_ccs811)){
-    Serial.println( "could not start CCS811. Freeze");
-    while(1);    
-  }
-  else
-  {
-    Serial.println(F("Connected CCS811."));
   }
 
   if (! sen6x.start()) {

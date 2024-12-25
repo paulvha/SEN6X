@@ -26,7 +26,7 @@
  *  
  *  Successfully tested on UNO R4 
  *  Wire1
- *                QWICC / STEMRA connector
+ *                Qwiic connector
  *  SEN6X pin     UNOR4
  *  1 VCC -------- 3v3
  *  2 GND -------- GND 
@@ -105,7 +105,7 @@
 
 /////////////////////////////////////////////////////////////
 /* define the SEN6x sensor connected
- * valid values, SEN60, SEN63, SEN65, SEN66 or SEN68
+ * valid values, SEN60, SEN63, SEN63C, SEN65, SEN66 or SEN68
 */
  ////////////////////////////////////////////////////////////
 const SEN6x_device Device = SEN66;
