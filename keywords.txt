@@ -19,6 +19,12 @@ sen6x_xox	KEYWORD1
 SEN6x	KEYWORD1
 sen6x	KEYWORD1
 SEN6x_device	KEYWORD1
+SEN60	KEYWORD1
+SEN63C	KEYWORD1
+SEN63	KEYWORD1
+SEN65	KEYWORD1
+SEN66	KEYWORD1
+SEN68	KEYWORD1
 
 # sen6x_values & sen6x_raw_values from SEN6x
 MassPM1	KEYWORD1
@@ -58,8 +64,9 @@ LearnTimeGainHours	KEYWORD1
 GateMaxDurationMin	KEYWORD1
 stdInitial	KEYWORD1
 GainFactor	KEYWORD1
+VOC_ALO_SIZE	KEYWORD1
 
-# sen6x_tmp_comp /  / temperature compensation
+# sen6x_tmp_comp / temperature compensation
 offset	KEYWORD1
 slope	KEYWORD1
 time	KEYWORD1
@@ -75,42 +82,53 @@ T2	KEYWORD1
 # Methods and Functions (KEYWORD2)
 #######################################
 
+#general 
 begin	KEYWORD2
 EnableDebugging	KEYWORD2
+GetErrDescription	KEYWORD2
 Probe	KEYWORD2
 Reset	KEYWORD2
 Start	KEYWORD2
 Stop	KEYWORD2
 Clean	KEYWORD2
-ActivateSHTHeater	KEYWORD2
-ForceCO2Recal	KEYWORD2
 
-GetAltitude	KEYWORD2
-GetStatusReg	KEYWORD2
-GetErrDescription	KEYWORD2
+#device information
 GetSerialNumber	KEYWORD2
 GetProductName	KEYWORD2
 GetVersion	KEYWORD2
+GetDevice	KEYWORD2
+SetDevice	KEYWORD2
+
+#results
+CheckDataReady	KEYWORD2
 GetValues	KEYWORD2
 GetRawValues	KEYWORD2
-GetAmbientPressure	KEYWORD2
-GetCo2SelfCalibratrion	KEYWORD2
 GetConcentration	KEYWORD2
-GetNoxAlgorithm	KEYWORD2
-GetVocAlgorithm	KEYWORD2
-GetVocAlgorithmState	KEYWORD2
-GetDevice	KEYWORD2
-Check_data_ready	KEYWORD2
+GetStatusReg	KEYWORD2
 
+#temperature handling
+ActivateSHTHeater	KEYWORD2
 SetTempAccelMode	KEYWORD2
-SetAltitude	KEYWORD2
-SetAmbientPressure	KEYWORD2
-SetCo2SelfCalibratrion	KEYWORD2
-SetNoxAlgorithm	KEYWORD2
-SetVocAlgorithmState	KEYWORD2
-SetVocAlgorithm	KEYWORD2
 SetTmpComp	KEYWORD2
-SetDevice	KEYWORD2
+
+#CO2 handling
+ForceCO2Recal	KEYWORD2
+GetAmbientPressure	KEYWORD2
+SetAmbientPressure	KEYWORD2
+GetAltitude	KEYWORD2
+SetAltitude	KEYWORD2
+SetCo2SelfCalibratrion	KEYWORD2
+GetCo2SelfCalibratrion	KEYWORD2
+
+#NOx
+GetNoxAlgorithm	KEYWORD2
+SetNoxAlgorithm	KEYWORD2
+
+#VOC
+GetVocAlgorithm	KEYWORD2
+SetVocAlgorithm	KEYWORD2
+GetVocAlgorithmState	KEYWORD2
+SetVocAlgorithmState	KEYWORD2
 
 #######################################
 # Constants (LITERAL1)

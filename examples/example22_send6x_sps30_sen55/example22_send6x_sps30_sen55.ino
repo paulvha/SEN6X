@@ -4,7 +4,7 @@
  *  can compare the results.
  *  
  *  Tested on UNO R4
- *  As the SEN6x is 3V3 it is connected to Qwicc I2C/Wire1, the SPS30 serial and the SEN55 to (5v) wire. 
+ *  As the SEN6x is 3V3 it is connected to Qwiic I2C/Wire1, the SPS30 serial and the SEN55 to (5v) wire. 
  *  
  *  Version 1.0 / December 2024 / Paulvha
  *  -initial version
@@ -80,23 +80,23 @@
  *  ===================================================================================
  *
  *  NO support, delivered as is, have fun, good luck !!
- *  
+ *   
  */
+ 
 ///////////////////////////////////////////////////////////////
-#include "sen55.h"
-#include "sen6x.h"
-#include "sps30.h"
+#include "sen55.h"  // https://github.com/paulvha/sen55
+#include "sen6x.h"  // https://github.com/paulvha/SEN6X
+#include "sps30.h"  // https://github.com/paulvha/sps30
 
-/////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
 /* define the SEN6x sensor connected
- * valid values, SEN60, SEN63, SEN65, SEN66 or SEN68
-*/
- ////////////////////////////////////////////////////////////
+ * valid values, SEN60, SEN63, SEN63C, SEN65, SEN66 or SEN68 */
+///////////////////////////////////////////////////////////////
 const SEN6x_device Device = SEN66;
 
 /////////////////////////////////////////////////////////////
-/* define which Wire interface for sen6x and sen55*/
- ////////////////////////////////////////////////////////////
+/* define which Wire interface for sen6x and sen55         */
+/////////////////////////////////////////////////////////////
 #define WIRE_sen6x Wire1
 #define WIRE_sen55 Wire
 
@@ -246,20 +246,19 @@ void setup() {
 void loop() {
   
   // Read Sen6x
-  if ( sen6x.Check_data_ready() ){
-    
-    if (sen6x.GetValues(&sen6x_val) != SEN6x_ERR_OK) {
-      Serial.println(F("Could not read values."));
-      Check_error_6x();
-      return;
-    }
-    
-    // also Sen6x PM values
-    if (sen6x.GetConcentration(&sen6x_valPM) != SEN6x_ERR_OK) {
-      Serial.println(F("Could not read PM values."));
-      Check_error_6x();
-      return;
-    }
+  if (! sen6x.CheckDataReady()) return;
+  
+  if (sen6x.GetValues(&sen6x_val) != SEN6x_ERR_OK) {
+    Serial.println(F("Could not read values."));
+    Check_error_6x();
+    return;
+  }
+  
+  // also Sen6x PM values
+  if (sen6x.GetConcentration(&sen6x_valPM) != SEN6x_ERR_OK) {
+    Serial.println(F("Could not read PM values."));
+    Check_error_6x();
+    return;
   }
 
   // Read SEN55
@@ -491,15 +490,10 @@ void Display_data()
  */
 void flush()
 {
-  if (Serial.available()) {
-    yield();
-    delay(300);
-    
-    do {
-      delay(200);
-      Serial.read();
-    } while(Serial.available());
-  }
+  do {
+    delay(200);
+    Serial.read();
+  } while(Serial.available());
 }
 
 /**

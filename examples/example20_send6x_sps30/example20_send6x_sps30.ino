@@ -59,14 +59,13 @@
  *  
  */
 
-#include "sen6x.h"
-#include "sps30.h"
+#include "sen6x.h"  // https://github.com/paulvha/SEN6X
+#include "sps30.h"  // https://github.com/paulvha/sps30
 
-/////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
 /* define the SEN6x sensor connected
- * valid values, SEN60, SEN63, SEN65, SEN66 or SEN68
-*/
- ////////////////////////////////////////////////////////////
+ * valid values, SEN60, SEN63, SEN63C, SEN65, SEN66 or SEN68 */
+//////////////////////////////////////////////////////////////
 const SEN6x_device Device = SEN66;
 
 /////////////////////////////////////////////////////////////
@@ -181,22 +180,22 @@ void setup() {
 
 void loop() {
   
+  if (! sen6x.CheckDataReady()) return;
+  
   // start reading Sen6x
-  if ( sen6x.Check_data_ready() ){
-    
-    if (sen6x.GetValues(&sen6x_val) != SEN6x_ERR_OK) {
-      Serial.println(F("Could not read values."));
-      Check_error_6x();
-      return;
-    }
-    
-    // also Sen6x
-    if (sen6x.GetConcentration(&sen6x_valPM) != SEN6x_ERR_OK) {
-      Serial.println(F("Could not read PM values."));
-      Check_error_6x();
-      return;
-    }
+  if (sen6x.GetValues(&sen6x_val) != SEN6x_ERR_OK) {
+    Serial.println(F("Could not read values."));
+    Check_error_6x();
+    return;
   }
+  
+  // also Sen6x
+  if (sen6x.GetConcentration(&sen6x_valPM) != SEN6x_ERR_OK) {
+    Serial.println(F("Could not read PM values."));
+    Check_error_6x();
+    return;
+  }
+ 
 
   // get SPS30
   if (sps30.GetValues(&sps30_val) != SPS30_ERR_OK) {

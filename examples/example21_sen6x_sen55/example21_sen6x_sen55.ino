@@ -21,7 +21,7 @@
  *
  *  Wire1
  *  SEN6x pin     UNO R4
- *                QWiic
+ *                Qwiic
  *  1 VCC -------- 3v3
  *  2 GND -------- GND 
  *  3 SDA -------- SDA 
@@ -64,19 +64,18 @@
  *  
  */
 
-#include "sen6x.h"
-#include "sen55.h"
+#include "sen55.h"  // https://github.com/paulvha/sen55
+#include "sen6x.h"  // https://github.com/paulvha/SEN6X
 
-/////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
 /* define the SEN6x sensor connected
- * valid values, SEN60, SEN63, SEN65, SEN66 or SEN68
-*/
- ////////////////////////////////////////////////////////////
+ * valid values, SEN60, SEN63, SEN63C, SEN65, SEN66 or SEN68 */
+///////////////////////////////////////////////////////////////
 const SEN6x_device Device = SEN66;
 
 /////////////////////////////////////////////////////////////
-/* define which Wire interface for sen6x and sen55*/
- ////////////////////////////////////////////////////////////
+/* define which Wire interface for sen6x and sen55         */
+////////////////////////////////////////////////////////////
 #define WIRE_sen6x Wire1
 #define WIRE_sen55 Wire
 
@@ -84,7 +83,7 @@ const SEN6x_device Device = SEN66;
 /* define driver debug
  * 0 : no messages
  * 1 : request debug messages */
- ////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
 #define SEN6x_DEBUG 0
 #define SEN55_DEBUG 0
 
@@ -166,7 +165,7 @@ void setup() {
     while(1);
   }
 
-if (sen6x.start()) Serial.println(F("SEN6x measurement started"));
+  if (sen6x.start()) Serial.println(F("SEN6x measurement started"));
   else { 
     Serial.println(F("could not Start sen6x."));
     while(1);
@@ -185,20 +184,19 @@ void loop() {
   static bool DisplayVal = true;
   
   // start reading Sen6x
-  if ( sen6x.Check_data_ready() ){
-    
-    if (sen6x.GetValues(&sen6x_val) != SEN6x_ERR_OK) {
-      Serial.println(F("Could not read values."));
-      Check_error_6x();
-      return;
-    }
-    
-    // also PM values
-    if (sen6x.GetConcentration(&sen6x_valPM) != SEN6x_ERR_OK) {
-      Serial.println(F("Could not read PM values."));
-      Check_error_6x();
-      return;
-    }
+  if (! sen6x.CheckDataReady()) return;
+  
+  if (sen6x.GetValues(&sen6x_val) != SEN6x_ERR_OK) {
+    Serial.println(F("Could not read values."));
+    Check_error_6x();
+    return;
+  }
+  
+  // also PM values
+  if (sen6x.GetConcentration(&sen6x_valPM) != SEN6x_ERR_OK) {
+    Serial.println(F("Could not read PM values."));
+    Check_error_6x();
+    return;
   }
 
   // start reading sen55

@@ -20,7 +20,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  **********************************************************************
- * Version DRAFT 1.4 / December 2024 /paulvha
+ * Version DRAFT 1.5 / December 2024 /paulvha
  * - Initial version 
  *
  *********************************************************************
@@ -49,9 +49,6 @@ struct SEN6x_Description SEN6x_ERR_desc[11] =
 };
 #endif // SMALLFOOTPRINT
 
-// default to SEN66
-#define DEFAULTDEVICE SEN66
-
 /**
  * @brief constructor and initialize variables
  */
@@ -66,6 +63,9 @@ SEN6x::SEN6x(void)
   _deviceDetected = false;    // wat auto detected ?
   _i2cPort = NULL;            // in case no begin was done
 }
+
+////////////////////// general routines  //////////////////////
+//************************************************************/
 
 /** 
  * @brief  Get or Set SEN6x device.
@@ -82,7 +82,140 @@ uint8_t SEN6x::GetDevice(bool *detected)
 }
 
 /**
- * @brief : Try to detect device based on device name
+ * @brief Enable or disable the printing of sent/response HEX values.
+ *
+ * @param act : level of debug to set
+ *  0 : no debug message
+ *  1 : sending and receiving data
+ */
+void SEN6x::EnableDebugging(uint8_t act) {
+  _Debug = act;
+}
+
+/**
+ * @brief begin communication
+ *
+ * @param port : I2C communication channel to be used
+ *
+ * User must have preform the wirePort.begin() in the sketch.
+ */
+bool SEN6x::begin(TwoWire *wirePort)
+{
+  _i2cPort = wirePort;            // Grab which port the user wants us to use
+  _i2cPort->setClock(100000);     // some boards do not set 100K
+
+  // try detect the device by device name 
+  // (NOT ABLE TO TEST, wait for NON-pre-release version..)
+  _deviceDetected = DetectDevice();
+
+  return(_deviceDetected);
+}
+
+/**
+ * @brief check if SEN6x sensor is available (read version information)
+ *
+ * Return:
+ *   true on success else false
+ */
+bool SEN6x::probe() 
+{
+  struct sen6x_version v;
+
+  if (GetVersion(&v) == SEN6x_ERR_OK)  return(true);
+
+  return(false);
+}
+
+bool SEN6x::reset() 
+{
+  if ( ! SendCommand(SEN6x_RESET)) return(false);
+  
+  _started = false;
+  
+  delay(500); //support for UNOR4 (else it will fail)
+  _i2cPort->begin();       // some I2C channels need a reset
+  delay(500); //support for UNOR4
+  
+  return(true);
+}
+
+bool SEN6x::start()
+{
+  if (_started) return(true);
+  
+  if ( ! SendCommand(SEN6x_START_MEASUREMENT)) return(false);
+  
+  _started = true;
+  
+  delay(1000);            // needs at least 20ms, we give plenty of time ?????
+  
+  return(true);
+}
+
+bool SEN6x::stop()
+{
+  if (! _started) return(true);
+  
+  if ( ! SendCommand(SEN6x_STOP_MEASUREMENT)) return(false);
+
+  _started = false;
+
+  return(true);
+}
+
+/**
+ *  @brief perform a clean (higher fan speed). 
+ * 
+ * One should wait for clean to finish, but there is no
+ * indication that clean is in progress.
+ * The datasheet indicates :
+ * 
+ * The fan is set to the maximum speed for 10 seconds and
+ * then automatically stopped. 
+ * 
+ * Wait at least 10s after this command before starting a measurement.
+ * 
+ */
+bool SEN6x::clean()
+{
+  // CAN NOT be done when measuring
+  if (! CheckToStop()) return(false);
+  
+  bool ret = SendCommand(SEN6x_START_FAN_CLEANING);
+  
+  if (! CheckWasStarted()) return(false);
+
+  return(ret);
+}
+
+/**
+ * @brief Check Firmware level 
+ *
+ * @param  
+ *   Major : minimum Major level of firmware
+ *   Minor : minimum Minor level of firmware
+*
+ * @return
+ *  True if SEN6x has required firmware
+ *  False does not have required firmware level.
+ *
+ *  NOTE : not sure this is needed for Sen6x (YET)
+ */
+bool SEN6x::FWCheck(uint8_t major, uint8_t minor) 
+{
+  // do we have the current FW level
+  if (_FW_Major == 0) {
+      if (! probe()) return (false);
+  }
+
+  // if requested level is HIGHER than current
+  if (major > _FW_Major || minor > _FW_Minor) return(false);
+
+  return(true);
+}
+
+/**
+ * @brief Try to detect device based on device name
  * 
  * @return :
  * true : device detected
@@ -136,92 +269,124 @@ bool SEN6x::DetectDevice()
   // no match
   return(false);
 }
-
+ 
 /**
- * @brief Enable or disable the printing of sent/response HEX values.
+ * @brief Read version info
  *
- * @param act : level of debug to set
- *  0 : no debug message
- *  1 : sending and receiving data
- */
-void SEN6x::EnableDebugging(uint8_t act) {
-  _Debug = act;
-}
-
-/**
- * @brief Print debug message if enabled 
- */
-void SEN6x::DebugPrintf(const char *pcFmt, ...)
-{
-  va_list pArgs;
-  
-  if (_Debug == 0) return;
-  
-  va_start(pArgs, pcFmt);
-  vsprintf(prfbuf, pcFmt, pArgs);
-  va_end(pArgs);
-
-  SEN6x_DEBUGSERIAL.print(prfbuf);
-}
-
-/**
- * @brief begin communication
- *
- * @param port : I2C communication channel to be used
- *
- * User must have preform the wirePort.begin() in the sketch.
- */
-bool SEN6x::begin(TwoWire *wirePort)
-{
-  _i2cPort = wirePort;            // Grab which port the user wants us to use
-  _i2cPort->setClock(100000);     // some boards do not set 100K
-
-  // try detect the device by device name 
-  // (NOT ABLE TO TEST, wait for NON-pre-release version..)
-  _deviceDetected = DetectDevice();
-
-  return(_deviceDetected);
-}
-
-/**
- * @brief check if SEN6x sensor is available (read version information)
- *
- * Return:
- *   true on success else false
- */
-bool SEN6x::probe() 
-{
-  struct sen6x_version v;
-
-  if (GetVersion(&v) == SEN6x_ERR_OK)  return(true);
-
-  return(false);
-}
-
-/**
- * @brief Check Firmware level 
- *
- * @param  Major : minimum Major level of firmware
- * @param  Minor : minimum Minor level of firmware
-*
+ * @param v :
+ *  store version information
+ * 
  * @return
- *  True if SEN6x has required firmware
- *  False does not have required firmware level.
- *
- *  NOTE : not sure this is needed for Sen6x (YET)
+ *  SEN6x_ERR_OK = ok
+ *  else error
  */
-bool SEN6x::FWCheck(uint8_t major, uint8_t minor) 
+uint8_t SEN6x::GetVersion(struct sen6x_version *v) 
 {
-  // do we have the current FW level
-  if (_FW_Major == 0) {
-      if (! probe()) return (false);
+  uint8_t ret; 
+
+  memset(v, 0x0, sizeof(struct sen6x_version));
+  
+  if (! SetCommand(SEN6x_READ_VERSION)) return(SEN6x_ERR_UNKNOWNCMD);
+
+  ret = I2C_SetPointer_Read(8);
+
+  if( ret  == SEN6x_ERR_OK) {
+    v->F_major = _Receive_BUF[0];
+    v->F_minor = _Receive_BUF[1];
+    v->F_debug = _Receive_BUF[2];
+    v->H_major = _Receive_BUF[3];
+    v->H_minor = _Receive_BUF[4];
+    v->P_major = _Receive_BUF[5];
+    v->P_minor = _Receive_BUF[6];
+    v->L_major = DRIVER_MAJOR_6x;
+    v->L_minor = DRIVER_MINOR_6x;
+  
+    // internal library use
+    _FW_Major = v->F_major;
+    _FW_Minor = v->F_minor;
+  }
+  
+  return(ret);
+}
+
+/**
+ * @brief Get Product name
+ *
+ * @param 
+ *  ser : buffer to hold the read result
+ *  len : length of the buffer
+ *
+ * @return
+ *  SEN6x_ERR_OK = ok
+ *  else error
+ */
+uint8_t SEN6x::GetProductName(char *ser, uint8_t len)
+{
+  uint8_t ret = SEN6x_ERR_OK, i;
+  char  s60[] = "SEN60";
+   
+  if (! SetCommand(SEN6x_READ_PRODUCT_NAME) ) {
+
+    // NO command to obtain productname for SEN60
+    if(_device == SEN60) {
+      for (i = 0; i < len, i < strlen(s60); i++) {
+        ser[i] = s60[i];
+      }
+      return SEN6x_ERR_OK;
+    }
+    else // who knows in the future ??
+      return(SEN6x_ERR_UNKNOWNCMD);
   }
 
-  // if requested level is HIGHER than current
-  if (major > _FW_Major || minor > _FW_Minor) return(false);
+  // true = check zero termination
+  ret =  I2C_SetPointer_Read(len,true);
+  
+  if (ret == SEN6x_ERR_OK) {
 
-  return(true);
+    // get data
+    for (i = 0; i < len ; i++) {
+      ser[i] = _Receive_BUF[i];
+      if (ser[i] == 0x0) break;
+    }
+  }
+
+  return(ret);
 }
+
+/**
+ * @brief Get Serial number info
+ *
+ * @param 
+ *   ser     : buffer to hold the read result
+ *   len     : length of the buffer
+ *
+ * @return
+ *  SEN6x_ERR_OK = ok
+ *  else error
+ */
+uint8_t SEN6x::GetSerialNumber(char *ser, uint8_t len)
+{
+  uint8_t ret,i;
+
+  if (! SetCommand(SEN6x_READ_SERIAL_NUMBER)) return(SEN6x_ERR_UNKNOWNCMD);
+
+  // true = check zero termination
+  ret =  I2C_SetPointer_Read(len,true);
+  
+  if (ret == SEN6x_ERR_OK) {
+
+    // get data
+    for (i = 0; i < len ; i++) {
+      ser[i] = _Receive_BUF[i];
+      if (ser[i] == 0x0) break;
+    }
+  }
+
+  return(ret);
+}
+
+//////// reading routines for different results ///////////////
+//************************************************************/
 
 /**
  * @brief Read status register
@@ -285,764 +450,30 @@ uint8_t SEN6x::GetStatusReg(uint16_t *status)
   return(SEN6x_ERR_OK);
 }
 
-bool SEN6x::reset() 
-{
-  if ( ! SendCommand(SEN6x_RESET)) return(false);
-  
-  _started = false;
-  
-  delay(500); //support for UNOR4 (else it will fail)
-  _i2cPort->begin();       // some I2C channels need a reset
-  delay(500); //support for UNOR4
-  
-  return(true);
-}
-
-bool SEN6x::start()
-{
-  if (_started) return(true);
-  
-  if ( ! SendCommand(SEN6x_START_MEASUREMENT)) return(false);
-  
-  _started = true;
-  
-  delay(1000);            // needs at least 20ms, we give plenty of time ?????
-  
-  return(true);
-}
-
-bool SEN6x::stop()
-{
-  if (! _started) return(true);
-  
-  if ( ! SendCommand(SEN6x_STOP_MEASUREMENT)) return(false);
-
-  _started = false;
-
-  return(true);
-}
-
 /**
- * set the opcode for the command for the sensor type
- * 
- @return
- * true : connected sensor supports the function 
- * false : connected sensor does NOT support
- */
-bool SEN6x::SetCommand(Sen6x_Comds_offset req){
- 
-  cmd  = LookupCommand(req);
-  if (cmd == 0x0000 ) return(false); 
-  
-  I2C_fill_buffer(cmd);
-  
-  return(true);
-}
-
-/**
- * Get the opcode for the command for the sensor type
- * 
- @return
- * true : connected sensor supports the function 
- * false : connected sensor does NOT support
- */
-uint16_t SEN6x::LookupCommand(Sen6x_Comds_offset cmd){
-  return(SEN6xCommandOpCode[_device][cmd]);
-}
-
-/**
- * lookup opcode and send the command
+ * @brief :check for data ready
+ *
  * @return
- * true : succesful
- * false : failure
+ *  true  if available
+ *  false if not
  */
-bool SEN6x::SendCommand(Sen6x_Comds_offset req)
+bool SEN6x::CheckDataReady()
 {
-  if ( SetCommand(req) ) {
-    if (I2C_SetPointer() == SEN6x_ERR_OK) return(true);
-  }
+  // make sure started
+  _restart = ! _started;
+  if (! CheckWasStarted()) return(SEN6x_ERR_PROTOCOL);
+
+  if (! SetCommand(SEN6x_READ_DATA_RDY_FLAG)) return(false);
+  
+  if (I2C_SetPointer_Read(2) != SEN6x_ERR_OK) return(false);
+  
+  if (_Receive_BUF[1] == 1) return(true);
   
   return(false);
 }
 
 /**
- * perform a clean (extra fan speed). 
- * One should wait for clean to finish, but there is no
- * indication that clean is in progress.
- * the datasheet indicates :
- * 
- * The fan is set to the maximum speed for 10 seconds and
- * then automatically stopped. 
- * 
- * Wait at least 10s after this command before starting a measurement.
- * 
- */
-bool SEN6x::clean()
-{
-  // CAN NOT be done when measuring
-  if (! CheckStarted()) return(false);
-  
-  bool ret = SendCommand(SEN6x_START_FAN_CLEANING);
-  
-  if (! CheckRestart()) return(false);
-
-  return(ret);
-}
-
-/**
- * Applies to: SEN63C, SEN65, SEN66, SEN68
- * 
- * Description: This command allows you to use the inbuilt heater 
- * in SHT sensor to reverse creep at high humidity.
- * 
- * This command activates the SHT sensor heater with 200mW for 1s. 
- * The heater is then automatically deactivated again.
- * 
- * Wait at least 20s after this command before starting a measurement 
- * to get coherent temperature values (heating consequence to disappear).
- * 
- * No wait is implemented as this can/must be done in the sketch to enable 
- * checking other values.
- */
-bool SEN6x::ActivateSHTHeater()
-{
-  // CAN NOT be done when measuring
-  if (! CheckStarted()) return(false);
-  
-  bool ret = SendCommand(SEN6x_ACTIVATE_SHT_HEATER);
-  
-  if (! CheckRestart()) return(false);
-  
-  return(ret);
-}
-  
-/**
- * @brief Read version info
- *
- * @param v :
- *  store version information
- * 
- * @return
- *  SEN6x_ERR_OK = ok
- *  else error
- */
-uint8_t SEN6x::GetVersion(struct sen6x_version *v) 
-{
-  uint8_t ret; 
-
-  memset(v, 0x0, sizeof(struct sen6x_version));
-  
-  if (! SetCommand(SEN6x_READ_VERSION)) return(SEN6x_ERR_UNKNOWNCMD);
-
-  ret = I2C_SetPointer_Read(8);
-
-  if( ret  == SEN6x_ERR_OK) {
-    v->F_major = _Receive_BUF[0];
-    v->F_minor = _Receive_BUF[1];
-    v->F_debug = _Receive_BUF[2];
-    v->H_major = _Receive_BUF[3];
-    v->H_minor = _Receive_BUF[4];
-    v->P_major = _Receive_BUF[5];
-    v->P_minor = _Receive_BUF[6];
-    v->L_major = DRIVER_MAJOR_6x;
-    v->L_minor = DRIVER_MINOR_6x;
-  
-    // internal library use
-    _FW_Major = v->F_major;
-    _FW_Minor = v->F_minor;
-  }
-  
-  return(ret);
-}
-
-
-/**
- * @brief Get Product name
- *
- * @param ser     : buffer to hold the read result
- * @param len     : length of the buffer
- *
- * @return
- *  SEN6x_ERR_OK = ok
- *  else error
- */
-uint8_t SEN6x::GetProductName(char *ser, uint8_t len)
-{
-  uint8_t ret = SEN6x_ERR_OK, i;
-  char  s60[] = "SEN60";
-   
-  if (! SetCommand(SEN6x_READ_PRODUCT_NAME) ) {
-
-    // NO command to obtain productname for SEN60
-    if(_device == SEN60) {
-      for (i = 0; i < len, i < strlen(s60); i++) {
-        ser[i] = s60[i];
-      }
-      return SEN6x_ERR_OK;
-    }
-    else // who knows in the future ??
-      return(SEN6x_ERR_UNKNOWNCMD);
-  }
-
-  // true = check zero termination
-  ret =  I2C_SetPointer_Read(len,true);
-  
-  if (ret == SEN6x_ERR_OK) {
-
-    // get data
-    for (i = 0; i < len ; i++) {
-      ser[i] = _Receive_BUF[i];
-      if (ser[i] == 0x0) break;
-    }
-  }
-
-  return(ret);
-}
-
-/**
- * @brief Get Serial number info
- *
- * @param ser     : buffer to hold the read result
- * @param len     : length of the buffer
- *
- * @return
- *  SEN6x_ERR_OK = ok
- *  else error
- */
-uint8_t SEN6x::GetSerialNumber(char *ser, uint8_t len)
-{
-  uint8_t ret,i;
-
-  if (! SetCommand(SEN6x_READ_SERIAL_NUMBER)) return(SEN6x_ERR_UNKNOWNCMD);
-
-  // true = check zero termination
-  ret =  I2C_SetPointer_Read(len,true);
-  
-  if (ret == SEN6x_ERR_OK) {
-
-    // get data
-    for (i = 0; i < len ; i++) {
-      ser[i] = _Receive_BUF[i];
-      if (ser[i] == 0x0) break;
-    }
-  }
-
-  return(ret);
-}
-
-/**
- * Applies to: SEN63C, SEN65, SEN66, SEN68
- * 
- * @brief : This command allows to set custom temperature acceleration 
- * parameters of the RH/T engine. It verwrites the default temperature 
- * acceleration parameters of the RH/T engine with custom values. 
- * This configuration is volatile, i.e. the parameters will be reverted 
- * to their default values after a device reset.
- * 
- * For more details on how to compensate the temperature on the SEN6x platform, 
- * refer to “Temperature Acceleration and Compensation Instructions for SEN6x” [3].
- */ 
-uint8_t SEN6x::SetTempAccelMode(sen6x_RHT_comp *table) 
-{
-  uint8_t ret;
-  
-  ret = I2C_fill_buffer(SEN6x_SET_TEMP_ACCEL, table);
-  if (ret == SEN6x_ERR_OK) ret = I2C_SetPointer();
-
-  return(ret);
-}
-
-/**
- * Applies to: SEN65, SEN66, SEN68
- * 
- * @brief : Allows backup of the VOC algorithm state to resume 
- * operation after a power cycle or device reset, skipping initial learning phase. 
- * 
- * By default, the VOC Engine is reset, and the algorithm state is retained if a
- * measurement is stopped and started again. If the VOC algorithm state shall be 
- * reset, a device reset, or a power cycle can be executed.
- * 
- * Gets the current VOC algorithm state. This data can be used to restore the 
- * state with Set VOC Algorithm State command after a short power cycle or device reset.
- * 
- * This command can be used either in measure mode or in idle mode (which will 
- * then return the state at the time when the measurement was stopped). 
- * In measure mode, the state can be read each measure interval to always have 
- * the latest state available, even in case of a sudden power loss.
- */
-uint8_t SEN6x::GetVocAlgorithmState(uint8_t *table, uint8_t tablesize) {
-  uint8_t ret;
-  
-  if (! SetCommand(SEN6x_GET_SET_VOC_STATE)) return(SEN6x_ERR_UNKNOWNCMD);
-  
-  // Check for Voc Algorithm length
-  if (tablesize < VOC_ALO_SIZE) return(SEN6x_ERR_PARAMETER);
-  
-  ret = I2C_SetPointer_Read(VOC_ALO_SIZE);
-
-  // save VOC data
-  for (int i = 0; i < VOC_ALO_SIZE; i++) {
-    table[i] =_Receive_BUF[i];
-  }  
-
-  return(ret);
-}
-
-/**
- * ONLY valid for SEN65, SEN66 and SEN68
- * 
- * @brief : Gets the parameters to customize the NOx algorithm. For more 
- * information on what the parameters below do, refer to Sensirion’s 
- * NOx Index for Indoor Air Applications [5].
- */
-uint8_t SEN6x::GetNoxAlgorithm(sen6x_xox *nox) {
-  
-  uint8_t ret;
-  
-  if (! SetCommand(SEN6x_GET_SET_NOX_TUNING)) return(SEN6x_ERR_UNKNOWNCMD);
-  
-  if (! CheckStarted()) return(SEN6x_ERR_PROTOCOL);
-  
-  I2C_fill_buffer(cmd);
-  
-  ret = I2C_SetPointer_Read(12);
-
-  nox->IndexOffset  = byte_to_int16_t(0) ;
-  nox->LearnTimeOffsetHours  = byte_to_int16_t(2) ;
-  nox->LearnTimeGainHours  = byte_to_int16_t(4) ;
-  nox->GateMaxDurationMin  = byte_to_int16_t(6) ;
-  nox->stdInitial  = byte_to_int16_t(8) ;
-  nox->GainFactor  = byte_to_int16_t(10) ;
-
-  if (! CheckRestart()) return(SEN6x_ERR_PROTOCOL);
-  
-  return(ret);
-}
-
-/**
- * ONLY valid for SEN65, SEN66 and SEN68
- * 
- * @brief : Gets the parameters to customize the VOC algorithm tuning. For more information on 
- * what the parameters below do, refer to Sensirion’s VOC Index for Indoor Air Applications [4].
- * 
- * This configuration is volatile, i.e. the parameters will be reverted to their default 
- * values after a device reset.
- */
-uint8_t SEN6x::GetVocAlgorithm(sen6x_xox *voc) {
-  uint8_t ret;
-  
-  if (! SetCommand(SEN6x_GET_SET_VOC_TUNING)) return(SEN6x_ERR_UNKNOWNCMD);
-  
-  if (! CheckStarted()) return(SEN6x_ERR_PROTOCOL);
-  
-  I2C_fill_buffer(cmd);
-  ret = I2C_SetPointer_Read(12);
-
-  voc->IndexOffset  = byte_to_int16_t(0) ;
-  voc->LearnTimeOffsetHours  = byte_to_int16_t(2) ;
-  voc->LearnTimeGainHours  = byte_to_int16_t(4) ;
-  voc->GateMaxDurationMin  = byte_to_int16_t(6) ;
-  voc->stdInitial  = byte_to_int16_t(8) ;
-  voc->GainFactor  = byte_to_int16_t(10) ;
-
-  if (! CheckRestart()) return(SEN6x_ERR_PROTOCOL);
-  
-  return(ret);
-}
-
-/**
- * only valid for SEN65, SEN66 and SEN68
- * 
- * @brief Allows setting of the VOC algorithm state to resume operation 
- * after a power cycle or device reset, skipping initial learning phase. 
- * By default, the VOC Engine is reset, and the algorithm state is 
- * retained if a measurement is stopped and started again. If the VOC 
- * algorithm state shall be reset, a device reset, or a power cycle can be executed.
- */
-uint8_t SEN6x::SetVocAlgorithmState(uint8_t *table, uint8_t tablesize)
-{
-  uint8_t ret;
- 
-  if (tablesize < VOC_ALO_SIZE) return(SEN6x_ERR_PARAMETER);
-  
-  if (! CheckStarted()) return(SEN6x_ERR_PROTOCOL);
-  
-  ret = I2C_fill_buffer(SEN6x_SET_VOC_STATE, table);
-
-  if (ret == SEN6x_ERR_OK)   ret = I2C_SetPointer();
-  
-  if (! CheckRestart()) return(SEN6x_ERR_PROTOCOL);
-  
-  return(ret);
-}
-
-/**
- * only valid for SEN65, SEN66 and SEN68
- */ 
-uint8_t SEN6x::SetNoxAlgorithm(sen6x_xox *nox)
-{
-  uint8_t ret;
-  
-  if (! CheckStarted()) return(SEN6x_ERR_PROTOCOL);
-  
-  // MUST be / strongly advised values (according to datasheet))
-  nox->LearnTimeGainHours = 12;
-  nox->stdInitial = 50;
-  
-  // check limits
-  if (nox->IndexOffset > 250 || nox->IndexOffset < 1) nox->IndexOffset = 1;
-  if (nox->LearnTimeOffsetHours > 1000 || nox->LearnTimeOffsetHours < 1) nox->LearnTimeOffsetHours = 12;
-  if (nox->GateMaxDurationMin > 3000 || nox->GateMaxDurationMin < 1) nox->GateMaxDurationMin = 720;
-  if (nox->GainFactor > 1000 || nox->GainFactor < 1) nox->GainFactor = 230;
-  
-  ret = I2C_fill_buffer(SEN6x_SET_NOX_TUNING, nox);
-  
-  if (ret == SEN6x_ERR_OK) ret = I2C_SetPointer();
-    
-  if (! CheckRestart()) return(SEN6x_ERR_PROTOCOL);
-
-  return(ret);
-}
-
-/**
- * only valid for SEN65, SEN66 and SEN68
- * 
- * Description: Sets the parameters to customize the VOC algorithm. It has 
- * no effect if at least one parameter is outside the specified range. 
- * For more information on what the parameters below do, refer to 
- * Sensirion’s VOC Index for Indoor Air Applications [4].
- * 
- * This configuration is volatile, i.e. the parameters will be reverted to 
- * their default values after a device reset
- */
-
-uint8_t SEN6x::SetVocAlgorithm(sen6x_xox *voc)
-{
-  uint8_t ret;
-
-  if (! CheckStarted()) return(SEN6x_ERR_PROTOCOL);
-  
-  // check limits (else default according to datasheet)
-  if (voc->IndexOffset > 250 || voc->IndexOffset < 1) voc->IndexOffset = 100;
-  if (voc->LearnTimeOffsetHours > 1000 || voc->LearnTimeOffsetHours < 1) voc->LearnTimeOffsetHours = 12;
-  if (voc->LearnTimeGainHours > 1000 || voc->LearnTimeGainHours < 1) voc->LearnTimeGainHours = 12;
-  if (voc->GateMaxDurationMin > 3000 || voc->GateMaxDurationMin < 1) voc->GateMaxDurationMin = 180;
-  if (voc->GateMaxDurationMin > 5000 || voc->GateMaxDurationMin < 10) voc->GateMaxDurationMin = 50;
-  if (voc->GainFactor > 1000 || voc->GainFactor < 1) voc->GainFactor = 230;
-  
-  ret = I2C_fill_buffer(SEN6x_SET_VOC_TUNING, voc);
-  
-  if (ret == SEN6x_ERR_OK) ret = I2C_SetPointer();
-    
-  if (! CheckRestart()) return(SEN6x_ERR_PROTOCOL);
-
-  return(ret);
-}
-
-/**
- * ONLY valid for SEN63C, SEN66
- * 
- * Execute the forced recalibration (FRC) of the CO2 signal. 
- * See the datasheet of the SCD4x sensor for details how the forced recalibration shall be used [6].
- * 
- * Note: After power-on wait at least 1000 ms and after stopping a measurement 600 ms before sending 
- * this command. The recalibration procedure will take about 500 ms to complete, during which time no 
- * other functions can be executed.
- */
-uint8_t SEN6x::ForceCO2Recal(uint16_t *val)
-{
-  uint8_t ret;
-  
-  if (! CheckStarted()) return(SEN6x_ERR_PROTOCOL);
-
-  data16 = *val;
-  
-  // max wait time indicated
-  delay(1000);
-  
-  ret = I2C_fill_buffer(SEN6x_SET_FORCE_C02_CAL);
-  
-  if (ret == SEN6x_ERR_OK) {
-    // wait recalibration time
-    delay(1000);
-  
-    // read result
-    ret = I2C_ReadToBuffer(2, false); 
-  
-    if (ret == SEN6x_ERR_OK)  *val = byte_to_Uint16_t(0) ;
-  }
-  
-  if (! CheckRestart()) return(SEN6x_ERR_PROTOCOL);
-
-  return(ret);
-}
-
-/**
- * ONLY valid for SEN63C, SEN66
- * 
- * Gets the status of the CO2 sensor automatic self-calibration (ASC). The CO2 sensor supports
- * automatic self-calibration (ASC) for long-term stability of the CO2 output. 
- * This feature can be enabled or disabled. By default, it is enabled.
- * 
- * This configuration is volatile, i.e. the parameter will be reverted to its default value after a device reset.
- */
-uint8_t SEN6x::SetCo2SelfCalibratrion(bool val)
-{
-  uint8_t ret;
-
-  if (! CheckStarted()) return(SEN6x_ERR_PROTOCOL);
-
-  data16 = (uint16_t) val; 
-  
-  ret = I2C_fill_buffer(SEN6X_SET_SELF_CO2_CAL);
-  
-  if (ret == SEN6x_ERR_OK) ret = I2C_SetPointer();
-  
-  if (! CheckRestart()) return(SEN6x_ERR_PROTOCOL);
-
-  return(ret);
-}
-
-/**
- * ONLY valid for SEN63C, SEN66
- * 
- * Gets the status of the CO2 sensor automatic self-calibration (ASC). The CO2 sensor supports
- * automatic self-calibration (ASC) for long-term stability of the CO2 output. 
- * This feature can be enabled or disabled. By default, it is enabled.
- * 
- * This configuration is volatile, i.e. the parameter will be reverted to its default value after a device reset.
- */
-uint8_t SEN6x::GetCo2SelfCalibratrion(bool *val)
-{  
-  uint8_t ret;
-  
-  if (! SetCommand(SEN6x_GET_SET_C02_CAL)) return(SEN6x_ERR_UNKNOWNCMD);
- 
-  if (! CheckStarted()) return(SEN6x_ERR_PROTOCOL);
-  
-  I2C_fill_buffer(cmd);
-  ret = I2C_SetPointer_Read(2);
-
-  if( ret == SEN6x_ERR_OK) *val = (bool) _Receive_BUF[1];
-
-  if (! CheckRestart()) return(SEN6x_ERR_PROTOCOL);
-  
-  return(ret);
-}
-
-/**
- * Get or set Ambient Pressure
- * Applies to: SEN63C, SEN66
- * 
- * Description: GET
- * Gets the ambient pressure value. The ambient pressure can be used for pressure 
- * compensation in the CO2 sensor.
- * 
- * Valid values are between 700 to 1’200 hPa. The default value is 1013 hPa.
- * 
- * This configuration is volatile, i.e. the parameter will be reverted to its default value after a device reset.
- */ 
-uint8_t SEN6x::GetAmbientPressure(uint16_t *val)
-{
-  uint8_t ret;
-
-  if (! SetCommand(SEN6x_GET_SET_AMBIENT_PRESS)) return(SEN6x_ERR_UNKNOWNCMD);
-
-  ret = I2C_SetPointer_Read(2);
-
-  if (ret == SEN6x_ERR_OK) *val = byte_to_Uint16_t(0);
-
-  return(ret);
-}
-
-/**
- * set Ambient Pressure
- * Applies to: SEN63C, SEN66
- * 
- * Sets the ambient pressure value. The ambient pressure can be used for pressure 
- * compensation in the CO2 sensor. Setting an ambient pressure overrides any pressure 
- * compensation based on a previously set sensor altitude. 
- * Use of this command is recommended for applications experiencing significant 
- * ambient pressure changes to ensure CO2 sensor accuracy. 
- * 
- * Valid input values are between 700 to 1’200 hPa. The default value is 1013 hPa.
- * 
- * This configuration is volatile, i.e. the parameter will be reverted to its default value after a device reset.
- */ 
-uint8_t SEN6x::SetAmbientPressure(uint16_t val)
-{
-
-  if (val < 700 || val > 1200) return(SEN6x_ERR_PARAMETER);
-  
-  data16 = val;
-  
-  I2C_fill_buffer(SEN6X_SET_AMBIENT_PRESSURE);
-  
-  return(I2C_SetPointer());
-}
-
-/**
- * @brief : if sensor was started then stop and remember it was
- * started.
- * 
- * @return :
- * true is Ok, false is error
- */
-bool SEN6x::CheckStarted()
-{
-  _restart = false;
-  
-  if (_started)
-  {
-    if (! stop()) {
-      DebugPrintf("ERROR: Could not stop measurement\n");
-      return(false);
-    }
-       
-    // give some time to stop
-    delay(500);
-    
-    _restart = true;
-  }
-  
-  return(true);
-}
-
-/**
- * @brief if the sensor was stopped during CheckStarted(), it will
- * be restarted now
- * 
- * @return :
- * true is Ok, false is error
- */
-bool SEN6x::CheckRestart()
-{
-  if (_restart){
-    
-    if (! start()) {
-      DebugPrintf("ERROR: Could not (re)start measurement\n");
-      return(false);
-    }
-      
-    // give some time to start
-    delay(500);
-    
-    _restart = false;
-  }
-  
-  return(true);
-}
-
-/**
- * Applies to: SEN63C, SEN66
- * 
- * Description: get 
- * Gets the current sensor altitude. The sensor altitude 
- * can be used for pressure compensation in the CO2 sensor.
- * 
- * The default sensor altitude value is set to 0 meters above sea level. 
- * Valid input values are between 0 and 3000m.
- * 
- * This configuration is volatile, i.e. the parameter will be reverted to its default value after a device reset.
- */ 
-uint8_t SEN6x::GetAltitude(uint16_t *val)
-{
-  uint8_t ret;
-  
-  if (! SetCommand(SEN6x_GET_SET_ALTITUDE)) return(SEN6x_ERR_UNKNOWNCMD);
-  
-  if (! CheckStarted()) return(SEN6x_ERR_PROTOCOL);
-  
-  I2C_fill_buffer(cmd);
-  ret = I2C_SetPointer_Read(2);
-
-  if( ret == SEN6x_ERR_OK)  *val = byte_to_Uint16_t(0);
-  
-  if (! CheckRestart()) return(SEN6x_ERR_PROTOCOL);
-
-  return(ret);
-}
-
-/**
- * Applies to: SEN63C, SEN66
- * 
- * Description: Sets the current sensor altitude. The sensor altitude can be used 
- *              for pressure compensation in the CO2 sensor. 
- * 
- * The default sensor altitude value is set to 0 meters above sea level. 
- * Valid input values are between 0 and 3000m.
- * 
- * This configuration is volatile, i.e. the parameter will be reverted to its default value after a device reset.
- */  
- 
-uint8_t SEN6x::SetAltitude(uint16_t val)
-{
-  uint8_t ret;
-  
-  if (val > 3000) return(SEN6x_ERR_PARAMETER);
-  
-  if (! CheckStarted()) return(SEN6x_ERR_PROTOCOL);
-  
-  data16 = val;
-
-  ret = I2C_fill_buffer(SEN6X_SET_ALTITUDE);
-  
-  if (ret == SEN6x_ERR_OK)  ret = I2C_SetPointer();
-
-  if (! CheckRestart()) return(SEN6x_ERR_PROTOCOL);
-
-  return(ret);
-}
-
-/**
- * Applies to: SEN63C, SEN65, SEN66, SEN68
- * Using the sen5x information for now. (December 2024)
- */ 
-uint8_t SEN6x::SetTmpComp(sen6x_tmp_comp *tmp)
-{
-  uint8_t ret;
-  sen6x_tmp_comp t;
-
-  t.offset = tmp->offset * 200;
-  t.slope = tmp->slope * 1000;
-  t.slot = tmp->slot;
-  t.time = tmp->time;
-  
-  // check slot (not clear what this is. awaiting on documentation)???
-  if (t.slot > 4) t.slot  = 4;
-  
-  ret = I2C_fill_buffer(SEN6x_SET_TEMP_COMP, &t);
-  
-  if (ret == SEN6x_ERR_OK)   ret = I2C_SetPointer();
-  
-  return(ret);
-}
-
-/**
- * @brief : get error description
- * @param code : error code
- * @param buf  : buffer to store the description
- * @param len  : length of buffer
- */
-void SEN6x::GetErrDescription(uint8_t code, char *buf, int len)
-{
-
-#if defined SMALLFOOTPRINT
-  strncpy(buf, "SmallFootprint: Info not enabled", len);
-#else
-  int i=0;
-
-  while (SEN6x_ERR_desc[i].code != 0xff) {
-      if(SEN6x_ERR_desc[i].code == code) break;
-      i++;
-  }
-
-  strncpy(buf, SEN6x_ERR_desc[i].desc, len);
-#endif // SMALLFOOTPRINT
-}
-
-/**
- * @brief : 
+ * @brief  
  *  read all values from the sensor and store in structure.
  *  depending on the sensor different values are returned. See datasheet
  * 
@@ -1058,18 +489,14 @@ uint8_t SEN6x::GetValues(struct sen6x_values *v)
   
   memset(v,0x0,sizeof(struct sen6x_values));
   
-  // measurement started already?
-  if (!_started) {
-    if (! start()) {
-      DebugPrintf("Could not start\n");
-      return(SEN6x_ERR_CMDSTATE);
-    }
-  }
+  // make sure started
+  _restart = ! _started;
+  if (! CheckWasStarted()) return(SEN6x_ERR_PROTOCOL);
 
   if (! SetCommand(SEN6x_READ_MEASURED_VALUE)) return(SEN6x_ERR_UNKNOWNCMD);
 
   if (_device == SEN60 )     len = 18;
-  else if(_device == SEN63C ) len = 14;
+  else if(_device == SEN63C) len = 14;
   else if(_device == SEN65 ) len = 16;
   else if(_device == SEN66 ) len = 18;
   else len = 18;
@@ -1125,7 +552,7 @@ uint8_t SEN6x::GetValues(struct sen6x_values *v)
 }
 
 /**
- * get RAW values
+ *  @brief get RAW values
  * 
  * Applies to: SEN63C, SEN65, SEN66, SEN68
  * 
@@ -1136,22 +563,20 @@ uint8_t SEN6x::GetRawValues(struct sen6x_raw_values *v)
 
   memset(v,0x0,sizeof(struct sen6x_raw_values));
 
-  if (! SetCommand(SEN6x_READ_RAW_VALUE)) return(SEN6x_ERR_UNKNOWNCMD);
+  // first check the sensor type supports rawvalues
+  uint16_t cmnd  = LookupCommand(SEN6x_GET_SET_VOC_TUNING);
+  if (cmnd == 0x0000 ) return(SEN6x_ERR_UNKNOWNCMD); 
   
-  // measurement started already?
-  if (!_started) {
-    if (! start()) {
-      DebugPrintf("Could not start\n");
-      return(SEN6x_ERR_CMDSTATE);
-    }
-  }
+  // make sure started
+  _restart = ! _started;
+  if (! CheckWasStarted()) return(SEN6x_ERR_PROTOCOL);
   
   if(_device == SEN63C)     len = 4; 
   else if(_device == SEN65) len = 8;
   else if(_device == SEN66) len = 10;
   else len = 8;
   
-  I2C_fill_buffer(cmd);
+  I2C_fill_buffer(cmnd);
   ret = I2C_SetPointer_Read(len);
   
   if (ret != SEN6x_ERR_OK) return (ret);
@@ -1180,30 +605,30 @@ uint8_t SEN6x::GetRawValues(struct sen6x_raw_values *v)
 }
 
 /**
- * read concentration of the sensor (the PM numbers)
+ *  @brief read concentration of the sensor (the PM numbers)
  */
 uint8_t SEN6x::GetConcentration(struct sen6x_concentration_values *v)
 {
-  uint8_t ret, len = 10, offset = 0 ;
+  uint8_t ret, len, offset;
   
   memset(v,0x0,sizeof(struct sen6x_concentration_values));
   
-  if (! SetCommand(SEN6x_NUM_CONC_VALUES)) return(SEN6x_ERR_UNKNOWNCMD);
+  // make sure started
+  _restart = ! _started;
+  if (! CheckWasStarted()) return(SEN6x_ERR_PROTOCOL);
   
-  // measurement started already?
-  if (!_started) {
-    if (! start()) {
-      DebugPrintf("Could not start\n");
-      return(SEN6x_ERR_CMDSTATE);
-    }
-  }
-  
+  // for SEN60 it is in SEN6x_READ_MEASURED_VALUE
   if (_device == SEN60 ) {
-      len = 18;
-      offset = 8;
+    if (! SetCommand(SEN6x_READ_MEASURED_VALUE)) return(SEN6x_ERR_UNKNOWNCMD);
+    len = 18;
+    offset = 8;
+  }
+  else {
+    if (! SetCommand(SEN6x_NUM_CONC_VALUES)) return(SEN6x_ERR_UNKNOWNCMD);
+    len = 10;
+    offset = 0;
   }
   
-  I2C_fill_buffer(cmd);
   ret = I2C_SetPointer_Read(len);
 
   if (ret == SEN6x_ERR_OK) {
@@ -1217,7 +642,666 @@ uint8_t SEN6x::GetConcentration(struct sen6x_concentration_values *v)
   return (ret);
 }
 
-////////////////// convert routines ///////////////////////////////
+///////////////////////// SH & T related routines /////////////
+//************************************************************/
+/**
+ * Applies to: SEN63C, SEN65, SEN66, SEN68
+ * 
+ * @brief : This command allows to set custom temperature acceleration 
+ * parameters of the RH/T engine. It verwrites the default temperature 
+ * acceleration parameters of the RH/T engine with custom values. 
+ * This configuration is volatile, i.e. the parameters will be reverted 
+ * to their default values after a device reset.
+ * 
+ * For more details on how to compensate the temperature on the SEN6x platform, 
+ * refer to “Temperature Acceleration and Compensation Instructions for SEN6x” [3].
+ */ 
+uint8_t SEN6x::SetTempAccelMode(sen6x_RHT_comp *table) 
+{
+  uint8_t ret;
+  
+  ret = I2C_fill_buffer(SEN6x_SET_TEMP_ACCEL, table);
+  if (ret == SEN6x_ERR_OK) ret = I2C_SetPointer();
+
+  return(ret);
+}
+
+/**
+ * Applies to: SEN63C, SEN65, SEN66, SEN68
+ * Using the sen5x information for now. (December 2024)
+ */ 
+uint8_t SEN6x::SetTmpComp(sen6x_tmp_comp *tmp)
+{
+  uint8_t ret;
+  sen6x_tmp_comp t;
+
+  t.offset = tmp->offset * 200;
+  t.slope = tmp->slope * 1000;
+  t.slot = tmp->slot;
+  t.time = tmp->time;
+  
+  // check slot (not clear what this is. awaiting on documentation)???
+  if (t.slot > 4) t.slot  = 4;
+  
+  ret = I2C_fill_buffer(SEN6x_SET_TEMP_COMP, &t);
+  
+  if (ret == SEN6x_ERR_OK) ret = I2C_SetPointer();
+  
+  return(ret);
+}
+
+/**
+ * Applies to: SEN63C, SEN65, SEN66, SEN68
+ * 
+ *  @brief This command allows you to use the inbuilt heater 
+ * in SHT sensor to reverse creep at high humidity.
+ * 
+ * This command activates the SHT sensor heater with 200mW for 1s. 
+ * The heater is then automatically deactivated again.
+ * 
+ * Wait at least 20s after this command before starting a measurement 
+ * to get coherent temperature values (heating consequence to disappear).
+ * 
+ * No wait is implemented as this can/must be done in the sketch to enable 
+ * checking other values.
+ */
+bool SEN6x::ActivateSHTHeater()
+{
+  // CAN NOT be done when measuring
+  if (! CheckToStop()) return(false);
+  
+  bool ret = SendCommand(SEN6x_ACTIVATE_SHT_HEATER);
+  
+  if (! CheckWasStarted()) return(false);
+  
+  return(ret);
+}
+
+///////////////////////// VOC related routines ////////////////
+//************************************************************/
+
+/**
+ * Applies to: SEN65, SEN66, SEN68
+ * 
+ * @brief Allows backup of the VOC algorithm state to resume 
+ * operation after a power cycle or device reset, skipping initial learning phase. 
+ * 
+ * By default, the VOC Engine is reset, and the algorithm state is retained if a
+ * measurement is stopped and started again. If the VOC algorithm state shall be 
+ * reset, a device reset, or a power cycle can be executed.
+ * 
+ * Gets the current VOC algorithm state. This data can be used to restore the 
+ * state with Set VOC Algorithm State command after a short power cycle or device reset.
+ * 
+ * This command can be used either in measure mode or in idle mode (which will 
+ * then return the state at the time when the measurement was stopped). 
+ * In measure mode, the state can be read each measure interval to always have 
+ * the latest state available, even in case of a sudden power loss.
+ */
+uint8_t SEN6x::GetVocAlgorithmState(uint8_t *table, uint8_t tablesize) 
+{
+  uint8_t ret;
+  
+  if (! SetCommand(SEN6x_GET_SET_VOC_STATE)) return(SEN6x_ERR_UNKNOWNCMD);
+  
+  // Check for Voc Algorithm length
+  if (tablesize < VOC_ALO_SIZE) return(SEN6x_ERR_PARAMETER);
+  
+  ret = I2C_SetPointer_Read(VOC_ALO_SIZE);
+
+  // save VOC data
+  for (int i = 0; i < VOC_ALO_SIZE; i++) {
+    table[i] =_Receive_BUF[i];
+  }  
+
+  return(ret);
+}
+
+/**
+ * only valid for SEN65, SEN66 and SEN68
+ * 
+ * @brief Allows setting of the VOC algorithm state to resume operation 
+ * after a power cycle or device reset, skipping initial learning phase. 
+ * By default, the VOC Engine is reset, and the algorithm state is 
+ * retained if a measurement is stopped and started again. If the VOC 
+ * algorithm state shall be reset, a device reset, or a power cycle can be executed.
+ */
+uint8_t SEN6x::SetVocAlgorithmState(uint8_t *table, uint8_t tablesize)
+{
+  uint8_t ret;
+ 
+  if (tablesize < VOC_ALO_SIZE) return(SEN6x_ERR_PARAMETER);
+  
+  if (! CheckToStop()) return(SEN6x_ERR_PROTOCOL);
+  
+  ret = I2C_fill_buffer(SEN6x_SET_VOC_STATE, table);
+
+  if (ret == SEN6x_ERR_OK)   ret = I2C_SetPointer();
+  
+  // seems to need some delay before starting again else it will hang
+  delay(100);
+  
+  if (! CheckWasStarted()) return(SEN6x_ERR_PROTOCOL);
+  
+  return(ret);
+}
+
+
+/**
+ * ONLY valid for SEN65, SEN66 and SEN68
+ * 
+ * @brief Gets the parameters to customize the VOC algorithm tuning. 
+ * For more information on what the parameters below do, refer to 
+ * Sensirion’s VOC Index for Indoor Air Applications [4].
+ * 
+ * This configuration is volatile, i.e. the parameters will be 
+ * reverted to their default values after a device reset.
+ */
+uint8_t SEN6x::GetVocAlgorithm(sen6x_xox *voc) 
+{
+  uint8_t ret;
+  
+  // first check the sensor type supports VOC
+  uint16_t cmnd  = LookupCommand(SEN6x_GET_SET_VOC_TUNING);
+  if (cmnd == 0x0000 ) return(SEN6x_ERR_UNKNOWNCMD); 
+
+  if (! CheckToStop()) return(SEN6x_ERR_PROTOCOL);
+
+  I2C_fill_buffer(cmnd);
+  ret = I2C_SetPointer_Read(12);
+
+  voc->IndexOffset  = byte_to_int16_t(0) ;
+  voc->LearnTimeOffsetHours  = byte_to_int16_t(2) ;
+  voc->LearnTimeGainHours  = byte_to_int16_t(4) ;
+  voc->GateMaxDurationMin  = byte_to_int16_t(6) ;
+  voc->stdInitial  = byte_to_int16_t(8) ;
+  voc->GainFactor  = byte_to_int16_t(10) ;
+
+  if (! CheckWasStarted()) return(SEN6x_ERR_PROTOCOL);
+
+  return(ret);
+}
+
+/**
+ * only valid for SEN65, SEN66 and SEN68
+ * 
+ *  @brief : Sets the parameters to customize the VOC algorithm. It has 
+ * no effect if at least one parameter is outside the specified range. 
+ * For more information on what the parameters below do, refer to 
+ * Sensirion’s VOC Index for Indoor Air Applications [4].
+ * 
+ * This configuration is volatile, i.e. the parameters will be 
+ * reverted to their default values after a device reset
+ */
+
+uint8_t SEN6x::SetVocAlgorithm(sen6x_xox *voc)
+{
+  uint8_t ret;
+
+  if (! CheckToStop()) return(SEN6x_ERR_PROTOCOL);
+  
+  // check limits (else default according to datasheet)
+  if (voc->IndexOffset > 250 || voc->IndexOffset < 1) voc->IndexOffset = 100;
+  if (voc->LearnTimeOffsetHours > 1000 || voc->LearnTimeOffsetHours < 1) voc->LearnTimeOffsetHours = 12;
+  if (voc->LearnTimeGainHours > 1000 || voc->LearnTimeGainHours < 1) voc->LearnTimeGainHours = 12;
+  if (voc->GateMaxDurationMin > 3000 || voc->GateMaxDurationMin < 1) voc->GateMaxDurationMin = 180;
+  if (voc->GateMaxDurationMin > 5000 || voc->GateMaxDurationMin < 10) voc->GateMaxDurationMin = 50;
+  if (voc->GainFactor > 1000 || voc->GainFactor < 1) voc->GainFactor = 230;
+
+  ret = I2C_fill_buffer(SEN6x_SET_VOC_TUNING, voc);
+
+  if (ret == SEN6x_ERR_OK) ret = I2C_SetPointer();
+  
+  // seems to need some delay before starting again else it will hang
+  delay(100);
+  
+  if (! CheckWasStarted()) return(SEN6x_ERR_PROTOCOL);
+ 
+  return(ret);
+}
+
+///////////////////////// NOx related routines/////////////////
+//************************************************************/
+
+/**
+ * ONLY valid for SEN65, SEN66 and SEN68
+ * 
+ * @brief : Gets the parameters to customize the NOx algorithm. 
+ * For more information on what the parameters below do, refer to 
+ * Sensirion’s NOx Index for Indoor Air Applications [5].
+ */
+uint8_t SEN6x::GetNoxAlgorithm(sen6x_xox *nox) 
+{
+  uint8_t ret;
+  
+  // first check the sensor type supports NOX
+  uint16_t cmnd  = LookupCommand(SEN6x_GET_SET_NOX_TUNING);
+  if (cmnd == 0x0000 ) return(SEN6x_ERR_UNKNOWNCMD); 
+
+  if (! CheckToStop()) return(SEN6x_ERR_PROTOCOL);
+  
+  I2C_fill_buffer(cmnd);
+  
+  ret = I2C_SetPointer_Read(12);
+
+  nox->IndexOffset  = byte_to_int16_t(0) ;
+  nox->LearnTimeOffsetHours  = byte_to_int16_t(2) ;
+  nox->LearnTimeGainHours  = byte_to_int16_t(4) ;
+  nox->GateMaxDurationMin  = byte_to_int16_t(6) ;
+  nox->stdInitial  = byte_to_int16_t(8) ;
+  nox->GainFactor  = byte_to_int16_t(10) ;
+
+  if (! CheckWasStarted()) return(SEN6x_ERR_PROTOCOL);
+  
+  return(ret);
+}
+
+/**
+ * only valid for SEN65, SEN66 and SEN68
+ * 
+ * @brief Sets the parameters to customize the NOx algorithm. 
+ * For more information on what the parameters below do, refer to 
+ * Sensirion’s NOx Index for Indoor Air Applications [5].
+ */ 
+uint8_t SEN6x::SetNoxAlgorithm(sen6x_xox *nox)
+{
+  uint8_t ret;
+  
+  if (! CheckToStop()) return(SEN6x_ERR_PROTOCOL);
+  
+  // MUST be / strongly advised values (according to datasheet))
+  nox->LearnTimeGainHours = 12;
+  nox->stdInitial = 50;
+  
+  // check limits
+  if (nox->IndexOffset > 250 || nox->IndexOffset < 1) nox->IndexOffset = 1;
+  if (nox->LearnTimeOffsetHours > 1000 || nox->LearnTimeOffsetHours < 1) nox->LearnTimeOffsetHours = 12;
+  if (nox->GateMaxDurationMin > 3000 || nox->GateMaxDurationMin < 1) nox->GateMaxDurationMin = 720;
+  if (nox->GainFactor > 1000 || nox->GainFactor < 1) nox->GainFactor = 230;
+  
+  ret = I2C_fill_buffer(SEN6x_SET_NOX_TUNING, nox);
+  
+  if (ret == SEN6x_ERR_OK) ret = I2C_SetPointer();
+  
+  // seems to need some delay before starting again else it will hang
+  delay(100);
+  
+  if (! CheckWasStarted()) return(SEN6x_ERR_PROTOCOL);
+
+  return(ret);
+}
+
+///////////////////////// CO2 related routines ////////////////
+//************************************************************/
+/**
+ * ONLY valid for SEN63C, SEN66
+ * 
+ * @brief Execute the forced recalibration (FRC) of the CO2 signal. 
+ * See the datasheet of the SCD4x sensor for details how the 
+ * forced recalibration shall be used [6].
+ * 
+ * Note: After power-on wait at least 1000 ms and after stopping a 
+ * measurement 600 ms before sending this command. 
+ * The recalibration procedure will take about 500 ms to complete, 
+ * during which time no other functions can be executed.
+ */
+uint8_t SEN6x::ForceCO2Recal(uint16_t *val)
+{
+  uint8_t ret;
+  
+  if (! CheckToStop()) return(SEN6x_ERR_PROTOCOL);
+
+  data16 = *val;
+  
+  // max wait time indicated
+  delay(1000);
+  
+  ret = I2C_fill_buffer(SEN6x_SET_FORCE_C02_CAL);
+  
+  if (ret == SEN6x_ERR_OK) {
+    // wait recalibration time
+    delay(1000);
+  
+    // read result
+    ret = I2C_ReadToBuffer(2, false); 
+  
+    if (ret == SEN6x_ERR_OK)  *val = byte_to_Uint16_t(0) ;
+  }
+  
+  if (! CheckWasStarted()) return(SEN6x_ERR_PROTOCOL);
+
+  return(ret);
+}
+
+/**
+ * ONLY valid for SEN63C, SEN66
+ * 
+ * @brief Gets the status of the CO2 sensor automatic self-calibration 
+ * (ASC). The CO2 sensor supports automatic self-calibration (ASC) for 
+ * long-term stability of the CO2 output. 
+ * This feature can be enabled or disabled. By default, it is enabled.
+ * 
+ * This configuration is volatile, i.e. the parameter will be 
+ * reverted to its default value after a device reset.
+ */
+uint8_t SEN6x::GetCo2SelfCalibratrion(bool *val)
+{  
+  uint8_t ret;
+  
+  // first check the sensor type supports CO2
+  uint16_t cmnd  = LookupCommand(SEN6x_GET_SET_VOC_TUNING);
+  if (cmnd == 0x0000 ) return(SEN6x_ERR_UNKNOWNCMD); 
+ 
+  if (! CheckToStop()) return(SEN6x_ERR_PROTOCOL);
+  
+  I2C_fill_buffer(cmnd);
+  ret = I2C_SetPointer_Read(2);
+
+  if( ret == SEN6x_ERR_OK) *val = (bool) _Receive_BUF[1];
+
+  if (! CheckWasStarted()) return(SEN6x_ERR_PROTOCOL);
+  
+  return(ret);
+}
+
+/**
+ * ONLY valid for SEN63C, SEN66
+ * 
+ * @brief Sets the status of the CO2 sensor automatic self-calibration 
+ * (ASC). The CO2 sensor supports automatic self-calibration (ASC) for 
+ * long-term stability of the CO2 output. 
+ * This feature can be enabled or disabled. By default, it is enabled.
+ * 
+ * This configuration is volatile, i.e. the parameter will be 
+ * reverted to its default value after a device reset.
+ */
+uint8_t SEN6x::SetCo2SelfCalibratrion(bool val)
+{
+  uint8_t ret;
+
+  if (! CheckToStop()) return(SEN6x_ERR_PROTOCOL);
+
+  data16 = (uint16_t) val; 
+  
+  ret = I2C_fill_buffer(SEN6X_SET_SELF_CO2_CAL);
+  
+  if (ret == SEN6x_ERR_OK) ret = I2C_SetPointer();
+  
+  if (! CheckWasStarted()) return(SEN6x_ERR_PROTOCOL);
+
+  return(ret);
+}
+
+/**
+ * @brief Get Ambient Pressure
+ * Applies to: SEN63C, SEN66
+ * 
+ * Description: GET
+ * Gets the ambient pressure value. The ambient pressure can be used 
+ * for pressure compensation in the CO2 sensor.
+ * 
+ * Valid values are between 700 to 1’200 hPa. The default value is 1013.
+ * 
+ * This configuration is volatile, i.e. the parameter will be 
+ * reverted to its default value after a device reset.
+ */ 
+uint8_t SEN6x::GetAmbientPressure(uint16_t *val)
+{
+  uint8_t ret;
+
+  if (! SetCommand(SEN6x_GET_SET_AMBIENT_PRESS)) return(SEN6x_ERR_UNKNOWNCMD);
+
+  ret = I2C_SetPointer_Read(2);
+
+  if (ret == SEN6x_ERR_OK) *val = byte_to_Uint16_t(0);
+
+  return(ret);
+}
+
+/**
+ * @brief set Ambient Pressure
+ * Applies to: SEN63C, SEN66
+ * 
+ * Sets the ambient pressure value. The ambient pressure can be used 
+ * for pressure compensation in the CO2 sensor. Setting an ambient 
+ * pressure overrides any pressure compensation based on a previously 
+ * set sensor altitude. 
+ * 
+ * Use of this command is recommended for applications experiencing 
+ * significant ambient pressure changes to ensure CO2 sensor accuracy. 
+ * 
+ * Valid values are between 700 to 1’200 hPa. The default value is 1013.
+ * 
+ * This configuration is volatile, i.e. the parameter will be 
+ * reverted to its default value after a device reset.
+ */ 
+uint8_t SEN6x::SetAmbientPressure(uint16_t val)
+{
+  uint8_t ret;
+  
+  if (val < 700 || val > 1200) return(SEN6x_ERR_PARAMETER);
+  
+  data16 = val;
+  
+  ret = I2C_fill_buffer(SEN6X_SET_AMBIENT_PRESSURE);
+
+  if (ret == SEN6x_ERR_OK) ret = I2C_SetPointer();
+  
+  return(ret);
+}
+
+/**
+ * @brief Get Sensor altitude
+ * 
+ * Applies to: SEN63C, SEN66
+ * 
+ * Description: get 
+ * Gets the current sensor altitude. The sensor altitude 
+ * can be used for pressure compensation in the CO2 sensor.
+ * 
+ * The default sensor altitude value is set to 0 meters above sea level. 
+ * Valid input values are between 0 and 3000m.
+ * 
+ * This configuration is volatile, i.e. the parameter will be 
+ * reverted to its default value after a device reset.
+ */ 
+uint8_t SEN6x::GetAltitude(uint16_t *val)
+{
+  uint8_t ret;
+  
+  // first check the sensor type supports Altitude
+  uint16_t cmnd  = LookupCommand(SEN6x_GET_SET_VOC_TUNING);
+  if (cmnd == 0x0000 ) return(SEN6x_ERR_UNKNOWNCMD); 
+  
+  if (! CheckToStop()) return(SEN6x_ERR_PROTOCOL);
+  
+  I2C_fill_buffer(cmnd);
+  ret = I2C_SetPointer_Read(2);
+
+  if( ret == SEN6x_ERR_OK)  *val = byte_to_Uint16_t(0);
+  
+  if (! CheckWasStarted()) return(SEN6x_ERR_PROTOCOL);
+
+  return(ret);
+}
+
+/**
+ * @brief Set Sensor altitude
+ * 
+ * Applies to: SEN63C, SEN66
+ * 
+ * Description: Sets the current sensor altitude. The sensor altitude 
+ * can be used for pressure compensation in the CO2 sensor. 
+ * 
+ * The default sensor altitude value is set to 0 meters above sea level. 
+ * Valid input values are between 0 and 3000m.
+ * 
+ * This configuration is volatile, i.e. the parameter will be 
+ * reverted to its default value after a device reset.
+ */  
+ 
+uint8_t SEN6x::SetAltitude(uint16_t val)
+{
+  uint8_t ret;
+  
+  if (val > 3000) return(SEN6x_ERR_PARAMETER);
+  
+  if (! CheckToStop()) return(SEN6x_ERR_PROTOCOL);
+  
+  data16 = val;
+
+  ret = I2C_fill_buffer(SEN6X_SET_ALTITUDE);
+  
+  if (ret == SEN6x_ERR_OK)  ret = I2C_SetPointer();
+
+  if (! CheckWasStarted()) return(SEN6x_ERR_PROTOCOL);
+
+  return(ret);
+}
+
+/**
+ * @brief : get error description
+ * 
+ * @param  :
+ *  code : error code
+ *  buf  : buffer to store the description
+ *  len  : length of buffer
+ */
+void SEN6x::GetErrDescription(uint8_t code, char *buf, int len)
+{
+
+#if defined SMALLFOOTPRINT
+  strncpy(buf, "SmallFootprint: Info not enabled", len);
+#else
+  int i=0;
+
+  while (SEN6x_ERR_desc[i].code != 0xff) {
+      if(SEN6x_ERR_desc[i].code == code) break;
+      i++;
+  }
+
+  strncpy(buf, SEN6x_ERR_desc[i].desc, len);
+#endif // SMALLFOOTPRINT
+}
+
+////////////////// supporting routines ////////////////////////
+//************************************************************/
+/**
+ * @brief : Stop sensor if started 
+ * 
+ * Remember the state it was.
+ * 
+ * @return :
+ * true => Sensor is stopped
+ * false => erroor
+ */
+bool SEN6x::CheckToStop()
+{
+  _restart = false;
+  
+  if (_started)
+  {
+    if (! stop()) {
+      DebugPrintf("ERROR: Could not stop measurement\n");
+      return(false);
+    }
+       
+    // give some time to stop
+    delay(100);
+    
+    _restart = true;
+  }
+  
+  return(true);
+}
+
+/**
+ * @brief Start the sensor if stopped during CheckToStop()
+ * 
+ * @return :
+ * true => Sensor is started
+ * false => erroor
+ */
+bool SEN6x::CheckWasStarted()
+{
+  if (_restart) {
+    
+    if (! start()) {
+      DebugPrintf("ERROR: Could not (re)start measurement\n");
+      return(false);
+    }
+      
+    // give some time to start
+    delay(100);
+    
+    _restart = false;
+  }
+  
+  return(true);
+}
+
+/**
+ * @brief Print debug message if enabled 
+ */
+void SEN6x::DebugPrintf(const char *pcFmt, ...)
+{
+  va_list pArgs;
+  
+  if (_Debug == 0) return;
+  
+  va_start(pArgs, pcFmt);
+  vsprintf(prfbuf, pcFmt, pArgs);
+  va_end(pArgs);
+
+  SEN6x_DEBUGSERIAL.print(prfbuf);
+}
+
+/**
+ * @brief set the opcode for the command for the sensor type
+ * 
+ @return
+ * true : connected sensor supports the function 
+ * false: connected sensor does NOT support the requested command
+ */
+bool SEN6x::SetCommand(Sen6x_Comds_offset req){
+ 
+  cmd  = LookupCommand(req);
+  if (cmd == 0x0000 ) return(false); 
+  
+  I2C_fill_buffer(cmd);
+  
+  return(true);
+}
+
+/**
+ * @brief Get the opcode for the command for the sensor type
+ * 
+ * @return
+ * 0x0000 : connected sensor does NOT support command
+ * else valid opcode
+ */
+uint16_t SEN6x::LookupCommand(Sen6x_Comds_offset cmd){
+  return(SEN6xCommandOpCode[_device][cmd]);
+}
+
+/**
+ * @brief Send the opcode command
+ * 
+ * @return
+ * true : succesful
+ * false: failure
+ */
+bool SEN6x::SendCommand(Sen6x_Comds_offset req)
+{
+  if ( SetCommand(req) ) {
+    if (I2C_SetPointer() == SEN6x_ERR_OK) return(true);
+  }
+  
+  return(false);
+}
+
+////////////////// convert routines ///////////////////////////
+//************************************************************/
 /**
  * @brief : translate 4 bytes to Uint32
  * @param x : offset in _Receive_BUF
@@ -1636,36 +1720,6 @@ uint8_t SEN6x::I2C_ReadToBuffer(uint8_t count, bool chk_zero)
   DebugPrintf("Error: Expected bytes : %d, Received bytes %d\n", count,_Receive_BUF_Length);
 
   return(SEN6x_ERR_DATALENGTH);
-}
-
-/**
- * @brief :check for data ready
- *
- * @return
- *  true  if available
- *  false if not
- */
-bool SEN6x::Check_data_ready()
-{
-  if (! SetCommand(SEN6x_READ_DATA_RDY_FLAG)) return(false);
-
-  if (!_started) {
-    
-    if(! start()) {
-      DebugPrintf("Could not start\n");
-      return(false);
-    }
-    
-    // give time to start
-    delay(1000);
-  }
-
-  I2C_fill_buffer(cmd);
-  if (I2C_SetPointer_Read(2) != SEN6x_ERR_OK) return(false);
-  
-  if (_Receive_BUF[1] == 1) return(true);
-  
-  return(false);
 }
 
 /**

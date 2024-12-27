@@ -160,6 +160,8 @@ void setup() {
 
 void loop() {
   
+  if (! sen6x.CheckDataReady()) return;
+    
   if (sen6x.GetValues(&val) != SEN6x_ERR_OK) {
     Serial.println(F("Could not read values."));
     return;

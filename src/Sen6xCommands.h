@@ -2,7 +2,7 @@
  * This file contains an overview of the commands for the different
  * SEN6x sensors. a 0x0000 means the command is not supported
  * 
- * Version DRAFT 1.4 / December 2024 /paulvha
+ * Version DRAFT 1.5 / December 2024 /paulvha
  * - Initial version
  */
  

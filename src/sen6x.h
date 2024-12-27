@@ -17,7 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  **********************************************************************
- * Version DRAFT 1.4 / December 2024 
+ * Version DRAFT 1.5 / December 2024 
  * - Initial version by paulvha
  *********************************************************************
 */
@@ -30,7 +30,7 @@
  * library version levels
  */
 #define DRIVER_MAJOR_6x 1
-#define DRIVER_MINOR_6x 4
+#define DRIVER_MINOR_6x 5
 
 /**
  * select default debug serial
@@ -133,8 +133,9 @@ struct sen6x_version {
  * (see extra-folder in this library)
  */
 struct sen6x_xox {
-  /** NOx index representing typical (average) conditions. Allowed
-   * values are in range 1..250. The default value is 1. */
+  /** index representing typical (average) conditions. 
+   * VOC default is 100 : Allowed values are in range 1..250. 
+   * NOx default value is for Nox. Allowed values are in range 1..250 (??) */
   int16_t IndexOffset;
   
   /** Time constant to estimate the NOx algorithm offset from the
@@ -318,6 +319,9 @@ enum Sen6x_Comds_offset {
 #define SEN6x_I2CAddress              0x6B
 #define SEN60_I2CAddress              0X6C            
 
+// set default device assumed to be connected
+#define DEFAULTDEVICE SEN66
+
 class SEN6x
 {
   public:
@@ -450,7 +454,7 @@ class SEN6x
      * 
      * Applies to: SEN60, SEN63C, SEN65, SEN66, SEN68
      */
-    bool Check_data_ready();
+    bool CheckDataReady();
     
     /**
      * @brief : retrieve measurement values from SEN6x
@@ -689,13 +693,14 @@ class SEN6x
     uint16_t cmd;
     
     /** shared supporting routines */
-    bool FWCheck(uint8_t major, uint8_t minor); 
+    bool FWCheck(uint8_t major, uint8_t minor);
+     
     uint16_t LookupCommand(Sen6x_Comds_offset cmd);
     bool SetCommand(Sen6x_Comds_offset req);
     bool SendCommand(Sen6x_Comds_offset req);
 
-    bool CheckStarted();
-    bool CheckRestart();
+    bool CheckToStop();
+    bool CheckWasStarted();
     bool DetectDevice();
     
     /** translate/transform */
