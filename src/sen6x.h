@@ -17,8 +17,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  **********************************************************************
- * Version DRAFT 1.5 / December 2024 
- * - Initial version by paulvha
+ * Version DRAFT 1.6 / December 2024 
+ * - updated version by paulvha
  *********************************************************************
 */
 #ifndef SEN6x_H
@@ -30,7 +30,7 @@
  * library version levels
  */
 #define DRIVER_MAJOR_6x 1
-#define DRIVER_MINOR_6x 5
+#define DRIVER_MINOR_6x 6
 
 /**
  * select default debug serial
@@ -179,11 +179,11 @@ struct sen6x_xox {
 struct sen6x_tmp_comp {
   /**Temperature offset [°C] (default value: 0)
    * scale 200*/
-  int16_t offset;
+  float offset;
   
   /**Normalized temperature offset slope (default value: 0)
    * scale 1000*/
-  int16_t slope;
+  float slope;
   
   /** Time constant in seconds (default value: 0) 
    * scale 1
@@ -681,14 +681,14 @@ class SEN6x
     uint8_t _Receive_BUF_Length;
     uint8_t _Send_BUF_Length;
     SEN6x_device _device;
-    bool _deviceDetected;               // true : device was automatically detected
-    bool _restart;                      // whether to restart after executing command
-    bool _started;                      // indicate the measurement has started
-    uint8_t _FW_Major, _FW_Minor;       // holds sensor firmware level
+    bool _deviceDetected;         // true : device was automatically detected
+    bool _restart;                // whether to restart after executing command
+    bool _started;                // indicate the measurement has started
+    uint8_t _FW_Major, _FW_Minor; // holds sensor firmware level
     
-    uint32_t data32;                    // pass data to i2c_fill_buffer
-    uint16_t data16;
-    uint8_t _I2CAddress;                // which _i2Caddress to use (SEN60 or SEN6x)
+    int _idata16;                 // data in i2c_fill_buffer
+    uint16_t _data16;             // pass data to i2c_fill_buffer
+    uint8_t _I2CAddress;          // which _i2Caddress to use (SEN60 or SEN6x)
     
     uint16_t cmd;
     

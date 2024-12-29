@@ -3,7 +3,7 @@
  * SEN6x sensors. a 0x0000 means the command is not supported
  * 
  * Version DRAFT 1.5 / December 2024 /paulvha
- * - Initial version
+ * - updated version
  */
  
 #include <sen6x.h>

@@ -20,8 +20,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  **********************************************************************
- * Version DRAFT 1.5 / December 2024 /paulvha
- * - Initial version 
+ * Version DRAFT 1.6 / December 2024 /paulvha
+ * - updated version 
  *
  *********************************************************************
  */
@@ -711,7 +711,7 @@ bool SEN6x::ActivateSHTHeater()
   if (! CheckToStop()) return(false);
   
   bool ret = SendCommand(SEN6x_ACTIVATE_SHT_HEATER);
-  
+
   if (! CheckWasStarted()) return(false);
   
   return(ret);
@@ -777,9 +777,6 @@ uint8_t SEN6x::SetVocAlgorithmState(uint8_t *table, uint8_t tablesize)
   ret = I2C_fill_buffer(SEN6x_SET_VOC_STATE, table);
 
   if (ret == SEN6x_ERR_OK)   ret = I2C_SetPointer();
-  
-  // seems to need some delay before starting again else it will hang
-  delay(100);
   
   if (! CheckWasStarted()) return(SEN6x_ERR_PROTOCOL);
   
@@ -851,10 +848,7 @@ uint8_t SEN6x::SetVocAlgorithm(sen6x_xox *voc)
   ret = I2C_fill_buffer(SEN6x_SET_VOC_TUNING, voc);
 
   if (ret == SEN6x_ERR_OK) ret = I2C_SetPointer();
-  
-  // seems to need some delay before starting again else it will hang
-  delay(100);
-  
+ 
   if (! CheckWasStarted()) return(SEN6x_ERR_PROTOCOL);
  
   return(ret);
@@ -922,10 +916,7 @@ uint8_t SEN6x::SetNoxAlgorithm(sen6x_xox *nox)
   ret = I2C_fill_buffer(SEN6x_SET_NOX_TUNING, nox);
   
   if (ret == SEN6x_ERR_OK) ret = I2C_SetPointer();
-  
-  // seems to need some delay before starting again else it will hang
-  delay(100);
-  
+
   if (! CheckWasStarted()) return(SEN6x_ERR_PROTOCOL);
 
   return(ret);
@@ -951,7 +942,7 @@ uint8_t SEN6x::ForceCO2Recal(uint16_t *val)
   
   if (! CheckToStop()) return(SEN6x_ERR_PROTOCOL);
 
-  data16 = *val;
+  _data16 = *val;
   
   // max wait time indicated
   delay(1000);
@@ -1021,7 +1012,7 @@ uint8_t SEN6x::SetCo2SelfCalibratrion(bool val)
 
   if (! CheckToStop()) return(SEN6x_ERR_PROTOCOL);
 
-  data16 = (uint16_t) val; 
+  _data16 = (uint16_t) val; 
   
   ret = I2C_fill_buffer(SEN6X_SET_SELF_CO2_CAL);
   
@@ -1081,7 +1072,7 @@ uint8_t SEN6x::SetAmbientPressure(uint16_t val)
   
   if (val < 700 || val > 1200) return(SEN6x_ERR_PARAMETER);
   
-  data16 = val;
+  _data16 = val;
   
   ret = I2C_fill_buffer(SEN6X_SET_AMBIENT_PRESSURE);
 
@@ -1148,7 +1139,7 @@ uint8_t SEN6x::SetAltitude(uint16_t val)
   
   if (! CheckToStop()) return(SEN6x_ERR_PROTOCOL);
   
-  data16 = val;
+  _data16 = val;
 
   ret = I2C_fill_buffer(SEN6X_SET_ALTITUDE);
   
@@ -1225,6 +1216,10 @@ bool SEN6x::CheckToStop()
 bool SEN6x::CheckWasStarted()
 {
   if (_restart) {
+    
+    // seems to need some delay before starting again else it will be unresponsive
+    // "Houston, we got a hang"
+    delay(100);
     
     if (! start()) {
       DebugPrintf("ERROR: Could not (re)start measurement\n");
@@ -1377,7 +1372,7 @@ uint8_t SEN6x::I2C_fill_buffer(uint16_t cmnd, void *val)
 {
   memset(_Send_BUF,0x0,sizeof(_Send_BUF));
   _Send_BUF_Length = 0;
-  uint16_t cmd;  
+  uint16_t cmd; 
   
   int i = 0;
   
@@ -1466,11 +1461,13 @@ uint8_t SEN6x::I2C_fill_buffer(uint16_t cmnd, void *val)
       _Send_BUF[i++] = cmd & 0xff;        //1 LSB    
         
        // add data
-      _Send_BUF[i++] = t->offset >>8 & 0xff;          //2 MSB
-      _Send_BUF[i++] = t->offset & 0xff;              //3 LSB
+       _idata16 = (int) t->offset; // can be negative
+      _Send_BUF[i++] = _idata16 >>8 & 0xff;          //2 MSB
+      _Send_BUF[i++] = _idata16 & 0xff;              //3 LSB
       _Send_BUF[i++] = I2C_calc_CRC(&_Send_BUF[2]); //4 CRC
-      _Send_BUF[i++] = t->slope >>8 & 0xff;           //5 MSB
-      _Send_BUF[i++] = t->slope & 0xff;               //6 LSB
+       _idata16 = (int) t->slope;
+      _Send_BUF[i++] = _idata16 >>8 & 0xff;          //2 MSB
+      _Send_BUF[i++] = _idata16 & 0xff;              //3 LSB
       _Send_BUF[i++] = I2C_calc_CRC(&_Send_BUF[5]); //7 CRC
       _Send_BUF[i++] = t->time >>8 & 0xff;            //8 MSB
       _Send_BUF[i++] = t->time & 0xff;                //9 LSB
@@ -1508,8 +1505,8 @@ uint8_t SEN6x::I2C_fill_buffer(uint16_t cmnd, void *val)
       _Send_BUF[i++] = cmd & 0xff;        //1 LSB    
         
        // add data
-      _Send_BUF[i++] = data16 >>8 & 0xff;          //2 MSB
-      _Send_BUF[i++] = data16 & 0xff;              //3 LSB
+      _Send_BUF[i++] = _data16 >>8 & 0xff;          //2 MSB
+      _Send_BUF[i++] = _data16 & 0xff;              //3 LSB
       _Send_BUF[i++] = I2C_calc_CRC(&_Send_BUF[2]); //4 CRC 
       break;
       
@@ -1521,7 +1518,7 @@ uint8_t SEN6x::I2C_fill_buffer(uint16_t cmnd, void *val)
         
        // add data
       _Send_BUF[i++] = 0x0;                        //2 MSB
-      _Send_BUF[i++] = data16 & 0xff;              //3 LSB
+      _Send_BUF[i++] = _data16 & 0xff;              //3 LSB
       _Send_BUF[i++] = I2C_calc_CRC(&_Send_BUF[2]); //4 CRC 
       break;
       
@@ -1532,8 +1529,8 @@ uint8_t SEN6x::I2C_fill_buffer(uint16_t cmnd, void *val)
       _Send_BUF[i++] = cmd & 0xff;        //1 LSB  
         
        // add data
-      _Send_BUF[i++] = data16 >>8 & 0xff;          //2 MSB
-      _Send_BUF[i++] = data16 & 0xff;              //3 LSB
+      _Send_BUF[i++] = _data16 >>8 & 0xff;          //2 MSB
+      _Send_BUF[i++] = _data16 & 0xff;              //3 LSB
       _Send_BUF[i++] = I2C_calc_CRC(&_Send_BUF[2]); //4 CRC 
       break;
       
@@ -1544,8 +1541,8 @@ uint8_t SEN6x::I2C_fill_buffer(uint16_t cmnd, void *val)
       _Send_BUF[i++] = cmd & 0xff;        //1 LSB   
 
        // add data
-      _Send_BUF[i++] = data16 >>8 & 0xff;          //2 MSB
-      _Send_BUF[i++] = data16 & 0xff;              //3 LSB
+      _Send_BUF[i++] = _data16 >>8 & 0xff;          //2 MSB
+      _Send_BUF[i++] = _data16 & 0xff;              //3 LSB
       _Send_BUF[i++] = I2C_calc_CRC(&_Send_BUF[2]); //4 CRC 
       break;
     

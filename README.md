@@ -15,7 +15,7 @@ I have done a number of projects on air-sensors. This is a version of a working 
 More work continues to happen to create examples and compare against other sensors.
 
 ## Prerequisites
-Examples 2, 20, 21, 22, 23, 24, 25, 26 have a dependency on other libraries and hardware. Documented in sketch.
+Examples 20, 21, 22, 23, 24, 25, 26, 27 have a dependency on other libraries and hardware. Documented in sketch.
 
 ## Software installation
 Obtain the zip and install like any other.
@@ -23,16 +23,17 @@ Obtain the zip and install like any other.
 ## Program usage
 
 ### Program options
-Please see the description in the top of the sketch and read the documentation (odt)
+See the description in the top of the sketch and read the documentation (odt)
 
 ## Versioning
 
 ### Version DRAFT / December 2024
  * initial draft version
- * ver draft 1.1 : updates and added example2
+ * ver draft 1.1 : updates and added example
  * ver draft 1.2 : updates and added examples
  * ver draft 1.3 : add opcode structure, added examples
  * ver draft 1.5 : added examples and update source code routines
+ * ver draft 1.6 : added and updated examples. Updates to SRC-code routines
 
 ## Author
  * Paul van Haastrecht (paulvha@hotmail.com)
