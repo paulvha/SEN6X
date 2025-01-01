@@ -20,7 +20,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  **********************************************************************
- * Version DRAFT 1.6 / December 2024 /paulvha
+ * Version DRAFT 1.7 / January 2025 /paulvha
  * - updated version 
  *
  *********************************************************************
