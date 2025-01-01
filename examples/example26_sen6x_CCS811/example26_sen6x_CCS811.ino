@@ -3,8 +3,6 @@
  *    
  *  This example will connect to the SEN6x and an CCS811.
  *  
- *  The CCS811 Sensor module is equipped with SGP40 and SH40
- * 
  *  This sketch will display the Mass, VOC, NOC, Temperature and humidity information, if available from 
  *  the SEN6x and also the VOC and CO2 from the CCS811. 
  *  
@@ -61,7 +59,7 @@
  *                    | HV        |--- +5V
  *    VIN  -----------| LV        |--- +3.3V
  *                    |           |
- *    GND  -----------| GND       |
+ *    GND  -----------| GND       |--- GND
  *    SDA  -----------| LV <-> HV |--- SDA
  *    SCL  -----------| LV <-> HV |--- SCL
  *    WAKE --------------------------- GND
@@ -70,7 +68,7 @@
  *  
  *  During test the CCS811 would jump high by even touching the wires (especially SCL-line). I suspect
  *  that because I used a cheap board (CJMCU8118) the lines are quickly to long. Hence I connected with 
- *  a level converter the CCS-811. It then worked stable. 
+ *  a level converter the CCS-811 to the Wire. It then worked stable. 
  *  ================================ Disclaimer ======================================
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -89,8 +87,7 @@
 
 /////////////////////////////////////////////////////////////
 /* define the SEN6x sensor connected
- * valid values, SEN60, SEN63, SEN65, SEN66 or SEN68
-*/
+ * valid values, SEN60, SEN63, SEN65, SEN66 or SEN68 */
  ////////////////////////////////////////////////////////////
 const SEN6x_device Device = SEN66;
 
@@ -138,7 +135,7 @@ void setup() {
   
   // Initialize CCS811 library
   if (! mySensor.begin(CCS811_ADDR,&WIRE_ccs811)){
-    Serial.println( "could not start CCS811. Freeze");
+    Serial.println( "Could not start CCS811. Freeze");
     while(1);    
   }
   else
@@ -155,7 +152,7 @@ void setup() {
 
   // Begin communication channel;
   if (! sen6x.begin(&WIRE_sen6x)) {
-    Serial.println(F("could not auto-detect SEN6x. set as defined in sketch."));
+    Serial.println(F("Could not auto-detect SEN6x. set as defined in sketch."));
     
     // inform the library about the SEN6x sensor connected
     // if incorrect set in the sketch, it may not be able to probe the device 
@@ -164,7 +161,7 @@ void setup() {
 
   // check for connection
   if (! sen6x.probe()) {
-    Serial.println(F("could not probe / connect with SEN6x."));
+    Serial.println(F("Could not probe / connect with SEN6x."));
     while(1);
   }
   else  {
@@ -173,12 +170,12 @@ void setup() {
 
   // reset SEN6x
   if (! sen6x.reset()) {
-    Serial.println(F("could not reset sen6x."));
+    Serial.println(F("Could not reset sen6x."));
     while(1);
   }
 
   if (! sen6x.start()) {
-    Serial.println(F("could not start sen6x."));
+    Serial.println(F("Could not start sen6x."));
     while(1);
   }
   else {

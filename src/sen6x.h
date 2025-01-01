@@ -592,7 +592,6 @@ class SEN6x
      * this command. The recalibration procedure will take about 500 ms to complete, during which time no 
      * other functions can be executed.
      * 
-     * 
      * @return :
      * SEN6x_ERR_OK : all OK
      * else error

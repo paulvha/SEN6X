@@ -564,7 +564,7 @@ uint8_t SEN6x::GetRawValues(struct sen6x_raw_values *v)
   memset(v,0x0,sizeof(struct sen6x_raw_values));
 
   // first check the sensor type supports rawvalues
-  uint16_t cmnd  = LookupCommand(SEN6x_GET_SET_VOC_TUNING);
+  uint16_t cmnd  = LookupCommand(SEN6x_READ_RAW_VALUE);
   if (cmnd == 0x0000 ) return(SEN6x_ERR_UNKNOWNCMD); 
   
   // make sure started
@@ -929,7 +929,7 @@ uint8_t SEN6x::SetNoxAlgorithm(sen6x_xox *nox)
  * 
  * @brief Execute the forced recalibration (FRC) of the CO2 signal. 
  * See the datasheet of the SCD4x sensor for details how the 
- * forced recalibration shall be used [6].
+ * forced recalibration shall be used at chapter 3.8.
  * 
  * Note: After power-on wait at least 1000 ms and after stopping a 
  * measurement 600 ms before sending this command. 
@@ -944,18 +944,27 @@ uint8_t SEN6x::ForceCO2Recal(uint16_t *val)
 
   _data16 = *val;
   
-  // max wait time indicated
+  // max wait time indicated after stop
   delay(1000);
   
   ret = I2C_fill_buffer(SEN6x_SET_FORCE_C02_CAL);
+  Serial.println(ret);
   
   if (ret == SEN6x_ERR_OK) {
-    // wait recalibration time
-    delay(1000);
-  
+    
+    // send command
+    ret  = I2C_SetPointer();
+    
+    if (ret == SEN6x_ERR_OK) return (ret);
+    
+    // wait recalibration time x 2
+    delay(1000);   
+
+    if (! SetCommand(SEN6x_FORCE_C02_CAL) ) return(SEN6x_ERR_UNKNOWNCMD);
+   
     // read result
-    ret = I2C_ReadToBuffer(2, false); 
-  
+    ret = I2C_ReadToBuffer(2, false);
+ 
     if (ret == SEN6x_ERR_OK)  *val = byte_to_Uint16_t(0) ;
   }
   
@@ -980,7 +989,7 @@ uint8_t SEN6x::GetCo2SelfCalibratrion(bool *val)
   uint8_t ret;
   
   // first check the sensor type supports CO2
-  uint16_t cmnd  = LookupCommand(SEN6x_GET_SET_VOC_TUNING);
+  uint16_t cmnd  = LookupCommand(SEN6x_GET_SET_C02_CAL);
   if (cmnd == 0x0000 ) return(SEN6x_ERR_UNKNOWNCMD); 
  
   if (! CheckToStop()) return(SEN6x_ERR_PROTOCOL);
@@ -1101,7 +1110,7 @@ uint8_t SEN6x::GetAltitude(uint16_t *val)
   uint8_t ret;
   
   // first check the sensor type supports Altitude
-  uint16_t cmnd  = LookupCommand(SEN6x_GET_SET_VOC_TUNING);
+  uint16_t cmnd  = LookupCommand(SEN6x_GET_SET_ALTITUDE);
   if (cmnd == 0x0000 ) return(SEN6x_ERR_UNKNOWNCMD); 
   
   if (! CheckToStop()) return(SEN6x_ERR_PROTOCOL);
@@ -1149,6 +1158,8 @@ uint8_t SEN6x::SetAltitude(uint16_t val)
 
   return(ret);
 }
+////////////////// supporting routines ////////////////////////
+//************************************************************/
 
 /**
  * @brief : get error description
@@ -1175,8 +1186,6 @@ void SEN6x::GetErrDescription(uint8_t code, char *buf, int len)
 #endif // SMALLFOOTPRINT
 }
 
-////////////////// supporting routines ////////////////////////
-//************************************************************/
 /**
  * @brief : Stop sensor if started 
  * 
@@ -1217,8 +1226,11 @@ bool SEN6x::CheckWasStarted()
 {
   if (_restart) {
     
-    // seems to need some delay before starting again else it will be unresponsive
     // "Houston, we got a hang"
+    // after updating a parameter that can only be performed when IDLE and restarting again
+    // if happened very often that NO new data was available. The sensor was unresponsive
+    // with trial&error I discoverd that adding this small delay solved that issue.
+    // it is not documented 
     delay(100);
     
     if (! start()) {
@@ -1517,7 +1529,7 @@ uint8_t SEN6x::I2C_fill_buffer(uint16_t cmnd, void *val)
       _Send_BUF[i++] = cmd & 0xff;        //1 LSB   
         
        // add data
-      _Send_BUF[i++] = 0x0;                        //2 MSB
+      _Send_BUF[i++] = 0x0;                         //2 MSB
       _Send_BUF[i++] = _data16 & 0xff;              //3 LSB
       _Send_BUF[i++] = I2C_calc_CRC(&_Send_BUF[2]); //4 CRC 
       break;
