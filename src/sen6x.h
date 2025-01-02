@@ -1,7 +1,7 @@
 /**
  * SEN6x Library Header file
  *
- * Copyright (c) December 2024, Paul van Haastrecht
+ * Copyright (c) January 2025, Paul van Haastrecht
  *
  * All rights reserved.
  *
@@ -17,7 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  **********************************************************************
- * Version DRAFT 1.7 / January 2025 /paulvha
+ * Version DRAFT 1.8 / January 2025 /paulvha
  * - updated version by paulvha
  *********************************************************************
 */
@@ -95,8 +95,8 @@ struct sen6x_values {
 };
 
 struct sen6x_raw_values {
-  float    Hum;           // Compensated Ambient Humidity [%RH]   SEN63C SEN65 SEN66 SEN68
-  float    Temp;          // Compensated Ambient Temperature [°C] SEN63C SEN65 SEN66 SEN68
+  int16_t  Hum;           // Compensated Ambient Humidity [%RH]   SEN63C SEN65 SEN66 SEN68
+  int16_t  Temp;          // Compensated Ambient Temperature [°C] SEN63C SEN65 SEN66 SEN68
   uint16_t VOC;           // VOC Index SEN65 SEN66 SEN68
   uint16_t NOX;           // NOx Index SEN65 SEN66 SEN68
   uint16_t CO2;           // CO2 concentration [ppm] SEN66

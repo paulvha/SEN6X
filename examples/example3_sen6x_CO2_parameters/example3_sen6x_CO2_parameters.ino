@@ -153,7 +153,7 @@ struct sen6x_RHT_comp TempAcc;
 bool TempC_default = true;        // is information in structure still default
 bool TempAcc_default = true;      // is information in structure still default
 int Type_temp = TEMP_TYPE;
-uint8_t dev;                      // Sen6x device type attached
+uint8_t dev = Device;                      // Sen6x device type attached
 
 bool header = true;
 
@@ -179,7 +179,7 @@ void setup() {
 
   // Begin communication channel
   if (! sen6x.begin(&WIRE_sen6x)) {
-    Serial.println(F("Could not auto-detect SEN6x. set as defined in sketch."));
+    Serial.println(F("Could not auto-detect SEN6x. Set as defined in sketch."));
     
     // inform the library about the SEN6x sensor connected
     sen6x.SetDevice(Device);

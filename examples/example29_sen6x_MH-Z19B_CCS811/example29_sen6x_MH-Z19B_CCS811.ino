@@ -135,6 +135,17 @@ const SEN6x_device Device = SEN66;
 #define DEBUG_SEN6x 0
 
 ///////////////////////////////////////////////////////////////
+/* By default the SEN66 and SEN63 perform CO2 automatic self
+ * calibration (ASC). This requires the sensor to be exposed
+ * for at least 4 hours during a week to external / outside air.
+ * If not do not, the advise is to disable.
+ * See SCD4x data sheet, chapter 3.8
+ * 
+ * true = disable ASC, false keep enabled */
+///////////////////////////////////////////////////////////////
+#define DISABLE_ASC false
+
+///////////////////////////////////////////////////////////////
 /////////// NO CHANGES BEYOND THIS POINT NEEDED ///////////////
 ///////////////////////////////////////////////////////////////
 
@@ -145,6 +156,8 @@ Adafruit_CCS811 mySensor;
 struct sen6x_values val;
 
 bool header = true;
+uint8_t dev = Device;            // indicate connected sensor
+bool det;
 
 void setup() {
   Serial.begin(115200);
@@ -184,16 +197,19 @@ void setup() {
 
   // Begin communication channel;
   if (! sen6x.begin(&WIRE_sen6x)) {
-    Serial.println(F("could not auto-detect SEN6x. set as defined in sketch."));
+    Serial.println(F("Could not auto-detect SEN6x. Set as defined in sketch."));
     
     // inform the library about the SEN6x sensor connected
     // if incorrect set in the sketch, it may not be able to probe the device 
     sen6x.SetDevice(Device);
   }
 
+  // get connected device
+  dev = sen6x.GetDevice(&det);
+  
   // check for connection
   if (! sen6x.probe()) {
-    Serial.println(F("could not probe / connect with SEN6x."));
+    Serial.println(F("Could not probe / connect with SEN6x."));
     while(1);
   }
   else  {
@@ -202,12 +218,22 @@ void setup() {
 
   // reset SEN6x
   if (! sen6x.reset()) {
-    Serial.println(F("could not reset sen6x."));
+    Serial.println(F("Could not reset sen6x."));
     while(1);
   }
 
+  // CO2 auto calibration
+  if ((dev == SEN66 || dev == SEN63) & DISABLE_ASC) {
+    if (sen6x.SetCo2SelfCalibratrion(false) == SEN6x_ERR_OK) {
+      Serial.println(F("CO2 ASC disabled"));
+    }
+    else {
+     Serial.println(F("Could not disable ASC"));
+    }
+  }
+
   if (! sen6x.start()) {
-    Serial.println(F("could not start sen6x."));
+    Serial.println(F("Could not start sen6x."));
     while(1);
   }
   else {

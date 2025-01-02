@@ -34,7 +34,9 @@ See the description in the top of the sketch and read the documentation (odt)
  * ver draft 1.3 : add opcode structure, added examples
  * ver draft 1.5 : added examples and update source code routines
  * ver draft 1.6 : added and updated examples. Updates to SRC-code routines
+### Version DRAFT / January 2025 
  * ver draft 1.7 : added and updated CO2 examples. Updates to SRC-code routines
+ * ver draft 1.8 : updated examples with CO2 ASc, added example7, Updates to SRC-code routines
 
 ## Author
  * Paul van Haastrecht (paulvha@hotmail.com)

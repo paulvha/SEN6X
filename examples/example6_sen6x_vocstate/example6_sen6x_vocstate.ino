@@ -147,6 +147,17 @@ const SEN6x_device Device = SEN66;
 #define DEBUG 0
 
 ///////////////////////////////////////////////////////////////
+/* By default the SEN66 and SEN63 perform CO2 automatic self
+ * calibration (ASC). This requires the sensor to be exposed
+ * for at least 4 hours during a week to external / outside air.
+ * If not do not, the advise is to disable.
+ * See SCD4x data sheet, chapter 3.8
+ * 
+ * true = disable ASC, false keep enabled */
+///////////////////////////////////////////////////////////////
+#define DISABLE_ASC false
+
+///////////////////////////////////////////////////////////////
 /////////// NO CHANGES BEYOND THIS POINT NEEDED ///////////////
 ///////////////////////////////////////////////////////////////
 
@@ -165,7 +176,7 @@ VocState Vocstates[MAXSTATES];
 
 bool header = true;
 bool DisplayVocHeader= true;
-uint8_t dev;
+uint8_t dev = Device;            // indicate connected sensor
 
 void setup() {
   
@@ -183,7 +194,7 @@ void setup() {
   
   // Begin communication channel;
   if (! sen6x.begin(&WIRE_sen6x)) {
-    Serial.println(F("could not auto-detect SEN6x. set as defined in sketch."));
+    Serial.println(F("Could not auto-detect SEN6x. Set as defined in sketch."));
     
     // inform the library about the SEN6x sensor connected
     sen6x.SetDevice(Device);
@@ -191,7 +202,7 @@ void setup() {
 
   // check for connection
   if (! sen6x.probe()) {
-    Serial.println(F("could not probe / connect with sen6x."));
+    Serial.println(F("Could not probe / connect with sen6x."));
     while(1);
   }
   else  {
@@ -200,7 +211,7 @@ void setup() {
 
   // reset SEN6x
   if (! sen6x.reset()) {
-    Serial.println(F("could not reset sen6x."));
+    Serial.println(F("Could not reset sen6x."));
     while(1);
   }
 
@@ -208,14 +219,24 @@ void setup() {
 
   Serial.setTimeout(INPUTDELAY * 1000);
 
+  // CO2 auto calibration
+  if ((dev == SEN66 || dev == SEN63) & DISABLE_ASC) {
+    if (sen6x.SetCo2SelfCalibratrion(false) == SEN6x_ERR_OK) {
+      Serial.println(F("CO2 ASC disabled"));
+    }
+    else {
+     Serial.println(F("Could not disable ASC"));
+    }
+  }
+
   InitVocStates();
 
   if (! sen6x.start()) {
-    Serial.println(F("could not Start sen6x."));
+    Serial.println(F("Could not Start sen6x."));
     while(1);
   }
   if (dev == SEN60 || dev == SEN63)
-    Serial.println(F("VOC state NOT supported on connected device type"));
+    Serial.println(F("\nVOC state NOT supported on connected device type"));
   else
     Serial.println(F("\nPress <enter> during measurement to handle VOC state\n"));
 }

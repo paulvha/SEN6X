@@ -87,6 +87,18 @@ const SEN6x_device Device = SEN66;
 #define SEN6x_DEBUG 0
 #define SEN55_DEBUG 0
 
+
+///////////////////////////////////////////////////////////////
+/* By default the SEN66 and SEN63 perform CO2 automatic self
+ * calibration (ASC). This requires the sensor to be exposed
+ * for at least 4 hours during a week to external / outside air.
+ * If not do not, the advise is to disable.
+ * See SCD4x data sheet, chapter 3.8
+ * 
+ * true = disable ASC, false keep enabled */
+///////////////////////////////////////////////////////////////
+#define DISABLE_ASC false
+
 ///////////////////////////////////////////////////////////////
 /////////// NO CHANGES BEYOND THIS POINT NEEDED ///////////////
 ///////////////////////////////////////////////////////////////
@@ -100,6 +112,8 @@ struct sen6x_concentration_values sen6x_valPM;
 struct sen_values sen55_val;
 struct sen_values_pm sen55_valPM;
 bool header = true;
+uint8_t dev = Device;            // indicate connected sensor
+bool det;
 
 void setup() {
   
@@ -126,6 +140,9 @@ void setup() {
     sen6x.SetDevice(Device);
   }
 
+  // get connected device
+  dev = sen6x.GetDevice(&det);
+  
   // check for SEN6x connection
   if (! sen6x.probe()) {
     Serial.println(F("could not probe / connect with SEN6x."));
@@ -139,6 +156,16 @@ void setup() {
   if (! sen6x.reset()) {
     Serial.println(F("could not reset SEN6x."));
     while(1);
+  }
+
+    // CO2 auto calibration
+  if ((dev == SEN66 || dev == SEN63) & DISABLE_ASC) {
+    if (sen6x.SetCo2SelfCalibratrion(false) == SEN6x_ERR_OK) {
+      Serial.println(F("CO2 ASC disabled"));
+    }
+    else {
+     Serial.println(F("Could not disable ASC"));
+    }
   }
 
   /////////////////////////////// sen55 /////////////////////////////////////

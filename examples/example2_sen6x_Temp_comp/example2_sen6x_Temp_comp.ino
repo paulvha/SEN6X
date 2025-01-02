@@ -21,41 +21,6 @@
  *  ~ 2 x applied change to Temperature offset. One can say if temperature is correct so is humidity, but
  *  it is not documented anywhere and the impact is times two !.
  *  
- *  reference temperature 18.4 C, humidity 44 %
- *  SEN66    current      18,8 C           44,36 % (correct)
- *  
- *  changed offset temperature +3.
- *  ==============================
- *  Wait 1 minute
- *  reference temperature 18.4 C, humidity 44 %
- *  SEN66                 21,8 C           37,45 % (!!!!!!!!!)      
- *  
- *  Wait 5 minutes
- *  reference temperature 18.5 C, humidity 44 %
- *  SEN66                 21,99            37,80 % (!!!!!!!!!)           
- *  
- *  changed offset temperature  back to zero 0.
- *  ============================
- *  Wait 1 minute
- *  reference temperature 18.5 C, humidity 44 %
- *  SEN66                 19,04 C          41.9 % 
- *  
- *  Wait 5 minutes
- *  reference temperature 18.5 C, humidity 44 %
- *  SEN66                 19.15            44.95%     
-
- *  changed offset temperature -2.
- *  ==============================
- *  Wait 1 minute
- *  reference temperature 18.7 C, humidity 44 %
- *  SEN66                 17.2 C           50.39 % (!!!!!!!!!)      
- *  
- *  Wait 5 minutes
- *  reference temperature 18.8 C, humidity 44 %
- *  SEN66                 17,32 C          49,89 % (!!!!!!!!!)  
-
-   
-
  *  Tested only on UNOR4, 
  *  
  *  ### TODO #### Artemis ATP, UNOR3, ATmega, Due, ESP32
@@ -181,6 +146,17 @@ const SEN6x_device Device = SEN66;
 /////////////////////////////////////////////////////////////
 #define INPUTDELAY 10
 
+///////////////////////////////////////////////////////////////
+/* By default the SEN66 and SEN63 perform CO2 automatic self
+ * calibration (ASC). This requires the sensor to be exposed
+ * for at least 4 hours during a week to external / outside air.
+ * If not do not, the advise is to disable.
+ * See SCD4x data sheet, chapter 3.8
+ * 
+ * true = disable ASC, false keep enabled */
+///////////////////////////////////////////////////////////////
+#define DISABLE_ASC false
+
 /////////////////////////////////////////////////////////////
 /////////// NO CHANGES BEYOND THIS POINT NEEDED /////////////
 /////////////////////////////////////////////////////////////
@@ -193,7 +169,7 @@ struct sen6x_RHT_comp TempAcc;
 bool TempC_default = true;        // is information in structure still default
 bool TempAcc_default = true;      // is information in structure still default
 int Type_temp = TEMP_TYPE;
-uint8_t dev;                      // Sen6x device type attached
+uint8_t dev = Device;            // indicate connected sensor
 
 bool header = true;
 
@@ -214,7 +190,7 @@ void setup() {
 
   // Begin communication channel
   if (! sen6x.begin(&WIRE_sen6x)) {
-    Serial.println(F("Could not auto-detect SEN6x. set as defined in sketch."));
+    Serial.println(F("Could not auto-detect SEN6x. Set as defined in sketch."));
     
     // inform the library about the SEN6x sensor connected
     sen6x.SetDevice(Device);
@@ -248,6 +224,16 @@ void setup() {
     Serial.println(F("Temperature settings NOT supported on connected SEN60"));
   else
     Serial.println(F("\nPress <enter> during measurement to handle Temperature parameters\n"));
+
+  // CO2 auto calibration
+  if ((dev == SEN66 || dev == SEN63) & DISABLE_ASC) {
+    if (sen6x.SetCo2SelfCalibratrion(false) == SEN6x_ERR_OK) {
+      Serial.println(F("CO2 ASC disabled"));
+    }
+    else {
+     Serial.println(F("Could not disable ASC"));
+    }
+  }
 
   InitStructures();
 }

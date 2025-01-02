@@ -123,6 +123,17 @@ const SEN6x_device Device = SEN66;
 #define DEBUG 0
 
 ///////////////////////////////////////////////////////////////
+/* By default the SEN66 and SEN63 perform CO2 automatic self
+ * calibration (ASC). This requires the sensor to be exposed
+ * for at least 4 hours during a week to external / outside air.
+ * If not do not, the advise is to disable.
+ * See SCD4x data sheet, chapter 3.8
+ * 
+ * true = disable ASC, false keep enabled */
+///////////////////////////////////////////////////////////////
+#define DISABLE_ASC false
+
+///////////////////////////////////////////////////////////////
 /////////// NO CHANGES BEYOND THIS POINT NEEDED ///////////////
 ///////////////////////////////////////////////////////////////
 
@@ -131,6 +142,7 @@ SEN6x sen6x;
 struct sen6x_values val;
 struct sen6x_concentration_values valPM;
 bool header = true;
+uint8_t dev = Device;            // indicate connected sensor
 
 void setup() {
   Serial.begin(115200);
@@ -147,7 +159,7 @@ void setup() {
 
   // Begin communication channel;
   if (! sen6x.begin(&WIRE_sen6x)) {
-    Serial.println(F("could not auto-detect SEN6x. set as defined in sketch."));
+    Serial.println(F("Could not auto-detect SEN6x. Set as defined in sketch."));
     
     // inform the library about the SEN6x sensor connected
     sen6x.SetDevice(Device);
@@ -155,7 +167,7 @@ void setup() {
 
   // check for connection
   if (! sen6x.probe()) {
-    Serial.println(F("could not probe / connect with sen6x."));
+    Serial.println(F("Could not probe / connect with sen6x."));
     while(1);
   }
   else  {
@@ -164,18 +176,28 @@ void setup() {
 
   // reset SEN6x
   if (! sen6x.reset()) {
-    Serial.println(F("could not reset sen6x."));
+    Serial.println(F("Could not reset sen6x."));
     while(1);
   }
   
   Display_Device_info();
-  
-  Serial.println("PRESS <ENTER> DURING MEASUREMENT TO SWITCH OUTPUT");
 
+  // CO2 auto calibration
+  if ((dev == SEN66 || dev == SEN63) & DISABLE_ASC) {
+    if (sen6x.SetCo2SelfCalibratrion(false) == SEN6x_ERR_OK) {
+      Serial.println(F("CO2 ASC disabled"));
+    }
+    else {
+     Serial.println(F("Could not disable ASC"));
+    }
+  }
+  
   if (! sen6x.start()) {
-    Serial.println(F("could not Start sen6x."));
+    Serial.println(F("Could not Start sen6x."));
     while(1);
   }
+    
+  Serial.println(F("\nPRESS <ENTER> DURING MEASUREMENT TO SWITCH OUTPUT"));
 }
 
 void loop() {
@@ -298,6 +320,7 @@ void Display_valPM()
 void Display_Device_info()
 {
   char num[32];
+  bool det;
   
   // get SEN6x serial number
   if (sen6x.GetSerialNumber(num,32) != SEN6x_ERR_OK) {
@@ -320,12 +343,14 @@ void Display_Device_info()
   }
   else  // based on setting in sketch (starting with dot)
   {
-    if (Device == SEN60) Serial.println(".SEN60");
-    else if (Device == SEN63) Serial.println(".SEN63C");
-    else if (Device == SEN65) Serial.println(".SEN65");
-    else if (Device == SEN66) Serial.println(".SEN66");
-    else if (Device == SEN68) Serial.println(".SEN68");
-    else Serial.println("Unknown !");
+    dev = sen6x.GetDevice(&det);
+    if (! det) Serial.print(".");
+    if (dev == SEN60) Serial.println(F("SEN60"));
+    else if (dev == SEN63) Serial.println(F("SEN63C"));
+    else if (dev == SEN65) Serial.println(F("SEN65"));
+    else if (dev == SEN66) Serial.println(F("SEN66"));
+    else if (dev == SEN68) Serial.println(F("SEN68"));
+    else Serial.println(F("Unknown !"));
   }
   
   Display_Versions();

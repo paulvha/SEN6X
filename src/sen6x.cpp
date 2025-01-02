@@ -1,7 +1,7 @@
 /**
  * SEN6x Library file
  *
- * Copyright (c) December 2024, Paul van Haastrecht
+ * Copyright (c) January 2025, Paul van Haastrecht
  *
  * All rights reserved.
  *
@@ -20,7 +20,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  **********************************************************************
- * Version DRAFT 1.7 / January 2025 /paulvha
+ * Version DRAFT 1.8 / January 2025 /paulvha
  * - updated version 
  *
  *********************************************************************
@@ -77,8 +77,8 @@ void SEN6x::SetDevice(SEN6x_device d) {
 
 uint8_t SEN6x::GetDevice(bool *detected) 
 {
-  return(_device);
   *detected = _deviceDetected;
+  return(_device);
 }
 
 /**
@@ -128,13 +128,11 @@ bool SEN6x::probe()
 
 bool SEN6x::reset() 
 {
-  if ( ! SendCommand(SEN6x_RESET)) return(false);
+  if (! SendCommand(SEN6x_RESET)) return(false);
   
   _started = false;
   
-  delay(500); //support for UNOR4 (else it will fail)
-  _i2cPort->begin();       // some I2C channels need a reset
-  delay(500); //support for UNOR4
+  delay(100);            // needs at least 20ms, we give plenty of time 
   
   return(true);
 }
@@ -143,11 +141,11 @@ bool SEN6x::start()
 {
   if (_started) return(true);
   
-  if ( ! SendCommand(SEN6x_START_MEASUREMENT)) return(false);
+  if (! SendCommand(SEN6x_START_MEASUREMENT)) return(false);
   
   _started = true;
   
-  delay(1000);            // needs at least 20ms, we give plenty of time ?????
+  delay(100);            // needs at least 50ms, we give plenty of time 
   
   return(true);
 }
@@ -156,8 +154,11 @@ bool SEN6x::stop()
 {
   if (! _started) return(true);
   
-  if ( ! SendCommand(SEN6x_STOP_MEASUREMENT)) return(false);
-
+  if (! SendCommand(SEN6x_STOP_MEASUREMENT)) return(false);
+     
+  // give time to stop
+  delay(1000);
+    
   _started = false;
 
   return(true);
@@ -181,11 +182,8 @@ bool SEN6x::clean()
   // CAN NOT be done when measuring
   if (! CheckToStop()) return(false);
   
-  bool ret = SendCommand(SEN6x_START_FAN_CLEANING);
-  
-  if (! CheckWasStarted()) return(false);
-
-  return(ret);
+  // Sensor will be started with the next request for values
+  return(SendCommand(SEN6x_START_FAN_CLEANING));
 }
 
 /**
@@ -194,7 +192,7 @@ bool SEN6x::clean()
  * @param  
  *   Major : minimum Major level of firmware
  *   Minor : minimum Minor level of firmware
-*
+ *
  * @return
  *  True if SEN6x has required firmware
  *  False does not have required firmware level.
@@ -258,7 +256,7 @@ bool SEN6x::DetectDevice()
    * such I have not been able to test this.*/
    
   // not sure name is SEN63 or SEN63C, so only take first 5 characters 
-  // maybe correct later
+  // TO be corrected later
   strncpy(needle,(char*) _Receive_BUF,5);
 
   if (strcmp(needle,"SEN63") == 0) {_device = SEN63; return(true);}
@@ -357,8 +355,8 @@ uint8_t SEN6x::GetProductName(char *ser, uint8_t len)
  * @brief Get Serial number info
  *
  * @param 
- *   ser     : buffer to hold the read result
- *   len     : length of the buffer
+ *   ser : buffer to hold the read result
+ *   len : length of the buffer
  *
  * @return
  *  SEN6x_ERR_OK = ok
@@ -519,40 +517,26 @@ uint8_t SEN6x::GetValues(struct sen6x_values *v)
     v->NumPM10 = (float)((byte_to_Uint16_t(16)) / (float) 10);
   }
   
-  else if (_device == SEN63C) {
+  else { // SEN63C, SEN65, SEN66, SEN68
     v->Hum =  (float)((byte_to_int16_t(8)) / (float) 100);       // Compensated Ambient Humidity [%RH]
     v->Temp = (float)((byte_to_int16_t(10)) / (float) 200);      // Compensated Ambient Temperature [°C]
-    v->CO2 =  byte_to_Uint16_t(12);                              // CO2
-  }
-  
-  else if (_device == SEN65 ){
-    v->Hum =  (float)((byte_to_int16_t(8)) / (float) 100);       // Compensated Ambient Humidity [%RH]
-    v->Temp = (float)((byte_to_int16_t(10)) / (float) 200);      // Compensated Ambient Temperature [°C]
-    v->VOC =  (float)((byte_to_int16_t(12)) / (float) 10);       // VOC Index
-    v->NOX =  (float)((byte_to_int16_t(14)) / (float) 10);       // NOx Index
-  }
-  
-  else if (_device == SEN66 ){
-    v->Hum =  (float)((byte_to_int16_t(8)) / (float) 100);       // Compensated Ambient Humidity [%RH]
-    v->Temp = (float)((byte_to_int16_t(10)) / (float) 200);      // Compensated Ambient Temperature [°C]
-    v->VOC =  (float)((byte_to_int16_t(12)) / (float) 10);       // VOC Index
-    v->NOX =  (float)((byte_to_int16_t(14)) / (float) 10);       // NOx Index
-    v->CO2 =  byte_to_Uint16_t(16);                              // CO2
-  }
-
-  else if (_device == SEN68 ){
-    v->Hum =  (float)((byte_to_int16_t(8)) / (float) 100);       // Compensated Ambient Humidity [%RH]
-    v->Temp = (float)((byte_to_int16_t(10)) / (float) 200);      // Compensated Ambient Temperature [°C]
-    v->VOC =  (float)((byte_to_int16_t(12)) / (float) 10);       // VOC Index
-    v->NOX =  (float)((byte_to_int16_t(14)) / (float) 10);       // NOx Index
-    v->HCHO = (float)((byte_to_Uint16_t(16)) / (float) 10);      // HCHO (formaldehyde)
+    
+    if (_device == SEN63C)  v->CO2 =  byte_to_Uint16_t(12);      // CO2
+    else {      // SEN65, SEN66, SEN68
+      v->VOC =  (float)((byte_to_int16_t(12)) / (float) 10);     // VOC Index
+      v->NOX =  (float)((byte_to_int16_t(14)) / (float) 10);     // NOx Index
+   
+      if (_device == SEN66 ) v->CO2 =  byte_to_Uint16_t(16);     // CO2
+      
+      if (_device == SEN68 ) v->HCHO = (float)((byte_to_Uint16_t(16)) / (float) 10); // HCHO (formaldehyde)
+    }
   }
 
   return(SEN6x_ERR_OK);
 }
 
 /**
- *  @brief get RAW values
+ * @brief get RAW values
  * 
  * Applies to: SEN63C, SEN65, SEN66, SEN68
  * 
@@ -563,7 +547,7 @@ uint8_t SEN6x::GetRawValues(struct sen6x_raw_values *v)
 
   memset(v,0x0,sizeof(struct sen6x_raw_values));
 
-  // first check the sensor type supports rawvalues
+  // first check the sensor type supports rawvalues (SEN60 does NOT)
   uint16_t cmnd  = LookupCommand(SEN6x_READ_RAW_VALUE);
   if (cmnd == 0x0000 ) return(SEN6x_ERR_UNKNOWNCMD); 
   
@@ -581,26 +565,18 @@ uint8_t SEN6x::GetRawValues(struct sen6x_raw_values *v)
   
   if (ret != SEN6x_ERR_OK) return (ret);
   
-  if (_device == SEN63C) {
-    v->Hum =  (float)((byte_to_int16_t(0)) / (float) 100);       // Compensated Ambient Humidity [%RH]
-    v->Temp = (float)((byte_to_int16_t(2)) / (float) 200);       // Compensated Ambient Temperature [°C]
+  v->Hum =  byte_to_int16_t(0);      // Compensated Ambient Humidity [%RH]
+  v->Temp = byte_to_int16_t(2);      // Compensated Ambient Temperature [°C]
+  
+  if (_device != SEN63C) {  // SEN65, SEN66, SEN68
+    v->VOC =  byte_to_Uint16_t(4);   // VOC Index
+    v->NOX =  byte_to_Uint16_t(6);   // NOx Index
+  
+    if (_device == SEN66 ) {
+      v->CO2 =  byte_to_Uint16_t(8); // CO2
+    }
   }
   
-  else if (_device == SEN65 || _device == SEN68) {
-    v->Hum =  (float)((byte_to_int16_t(0)) / (float) 100);       // Compensated Ambient Humidity [%RH]
-    v->Temp = (float)((byte_to_int16_t(2)) / (float) 200);       // Compensated Ambient Temperature [°C]
-    v->VOC =  byte_to_Uint16_t(4);                               // VOC Index
-    v->NOX =  byte_to_Uint16_t(6);                               // NOx Index
-  }
-  
-  else if (_device == SEN66 ) {
-    v->Hum =  (float)((byte_to_int16_t(0)) / (float) 100);       // Compensated Ambient Humidity [%RH]
-    v->Temp = (float)((byte_to_int16_t(2)) / (float) 200);       // Compensated Ambient Temperature [°C]
-    v->VOC =  byte_to_Uint16_t(4);                               // VOC Index
-    v->NOX =  byte_to_Uint16_t(6);                               // NOx Index
-    v->CO2 =  byte_to_Uint16_t(8);                               // CO2
-  }
-
   return(SEN6x_ERR_OK);
 }
 
@@ -648,7 +624,7 @@ uint8_t SEN6x::GetConcentration(struct sen6x_concentration_values *v)
  * Applies to: SEN63C, SEN65, SEN66, SEN68
  * 
  * @brief : This command allows to set custom temperature acceleration 
- * parameters of the RH/T engine. It verwrites the default temperature 
+ * parameters of the RH/T engine. It overwrites the default temperature 
  * acceleration parameters of the RH/T engine with custom values. 
  * This configuration is volatile, i.e. the parameters will be reverted 
  * to their default values after a device reset.
@@ -660,9 +636,13 @@ uint8_t SEN6x::SetTempAccelMode(sen6x_RHT_comp *table)
 {
   uint8_t ret;
   
+  // CAN NOT be done when measuring
+  if (! CheckToStop()) return(SEN6x_ERR_PROTOCOL);
+  
   ret = I2C_fill_buffer(SEN6x_SET_TEMP_ACCEL, table);
   if (ret == SEN6x_ERR_OK) ret = I2C_SetPointer();
-
+  
+  //sensor will be restarted with next value request
   return(ret);
 }
 
@@ -686,7 +666,7 @@ uint8_t SEN6x::SetTmpComp(sen6x_tmp_comp *tmp)
   ret = I2C_fill_buffer(SEN6x_SET_TEMP_COMP, &t);
   
   if (ret == SEN6x_ERR_OK) ret = I2C_SetPointer();
-  
+
   return(ret);
 }
 
@@ -712,8 +692,9 @@ bool SEN6x::ActivateSHTHeater()
   
   bool ret = SendCommand(SEN6x_ACTIVATE_SHT_HEATER);
 
-  if (! CheckWasStarted()) return(false);
-  
+  delay(1300);
+
+  //will be restarted with next value request
   return(ret);
 }
 
@@ -1205,10 +1186,7 @@ bool SEN6x::CheckToStop()
       DebugPrintf("ERROR: Could not stop measurement\n");
       return(false);
     }
-       
-    // give some time to stop
-    delay(100);
-    
+
     _restart = true;
   }
   
@@ -1225,13 +1203,6 @@ bool SEN6x::CheckToStop()
 bool SEN6x::CheckWasStarted()
 {
   if (_restart) {
-    
-    // "Houston, we got a hang"
-    // after updating a parameter that can only be performed when IDLE and restarting again
-    // if happened very often that NO new data was available. The sensor was unresponsive
-    // with trial&error I discoverd that adding this small delay solved that issue.
-    // it is not documented 
-    delay(100);
     
     if (! start()) {
       DebugPrintf("ERROR: Could not (re)start measurement\n");

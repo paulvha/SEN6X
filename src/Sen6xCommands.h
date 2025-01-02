@@ -1,6 +1,8 @@
 /**
  * This file contains an overview of the commands for the different
- * SEN6x sensors. a 0x0000 means the command is not supported
+ * SEN6x sensors. 
+ * 
+ * A 0x0000 means the command is not supported for this sensor
  * 
  * Version DRAFT 1.5 / December 2024 /paulvha
  * - updated version
@@ -146,7 +148,6 @@ uint16_t SEN6xCommandOpCode [5][SEN6x_GET_SET_ALTITUDE +1] =
     0x0000, // SEN6x_GET_SET_C02_CAL
     0x0000, // SEN6x_GET_SET_AMBIENT_PRESS
     0x0000  // SEN6x_GET_SET_ALTITUDE
-    /** expect something for the H2HO in the near future */
   }
 };
 
