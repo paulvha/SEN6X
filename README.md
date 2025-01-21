@@ -37,6 +37,7 @@ See the description in the top of the sketch and read the documentation (odt)
 ### Version DRAFT / January 2025 
  * ver draft 1.7 : added and updated CO2 examples. Updates to SRC-code routines
  * ver draft 1.8 : updated examples with CO2 ASc, added example7, Updates to SRC-code routines
+ * ver draft 1.9 : updated example7 with information about RAW values
 
 ## Author
  * Paul van Haastrecht (paulvha@hotmail.com)

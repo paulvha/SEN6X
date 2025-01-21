@@ -6,9 +6,20 @@
  *  
  *  It will display the Mass, VOC, NOC, Temperature and humidity information, as well as the raw values
  *  from the humidity, temperature, VOC, NOx and CO2 if the sensor provides. NOT valid for SEN60 !
- *  
+
  *  January 2025
- *  !!!! The some RAW values do not make sense (yet) to me. !!!!
+ *  !!!! Some RAW values did not make sense to me.  BUT... now they do (somehow)
+ *  More details below. 
+ *  
+ *  Based on the better understanding the raw values are more suitable for debugging and testing
+ *  the algorithm. Checking whether new data is available can / should be done with GET DATA READY SEN6x
+ 
+ *  According to the datasheet:
+ *  Description: Returns the measured raw values. The command Get Data Ready SEN6x can be used to check if
+ *  new data is available since the last read operation. If no new data is available, the previous values will be
+ *  returned. If no data is available at all (e.g. measurement not running for at least one second), all values will be
+ *  at their upper limit (0xFFFF for uint16, 0x7FFF for int16).
+ *  
  *  -------------------------------------------------------------
  *  
  *  Take humidity: 
@@ -19,6 +30,10 @@
  *  After ~5 min
  *  The raw value has been trending around 3780, the provided value is trending to 47.09 (external measured 46%)
  *  so the real value makes sense.... the raw value does not.
+ * 
+ *  After contact with Sensirion I have understood that they know how much impact the surrouding in the SEN6x has to 
+ *  the sensor and make the calculated adjustment. If that is not enough (e.g. the SEN6x is further boxed), you can make
+ *  more adjustments with the Temperature Offset parameters and /or Temperature acceleration parameters.
  *  
  *  Take Temperature:
  *  =================
@@ -28,6 +43,11 @@
  *  after ~5 min
  *  The raw value is trending around 4429, the real value is 18.6 (external measued 19C)
  *  so the real value makes sense.... the raw value does not.
+ * 
+ *  After contact with Sensirion I have understood that they know how much impact the surrouding in the SEN6x has to 
+ *  the sensor and make the calculated adjustment. If that is not enough (e.g. the SEN6x is further boxed), you can make
+ *  more adjustments with the Temperature Offset parameters and /or Temperature acceleration parameters.
+ *  
  *  
  *  Take VOC:
  *  ========
@@ -38,7 +58,7 @@
  *  However with the VOC at 101 and the ticks around 32210, breathing to the SEN66. Make the VOC index 
  *  go in big steps (<10 seconds) to 180 and another 10 second later to 97 and slowly return to 100. The  
  *  VOC ticks however moved a little down to 32056 and soon after back to 32220.
- *  Is that correct ??? I don't know.
+ *  Is that correct ??? I don't know. Spending more time to better understand and will update later
  *  
  *  Take Nox:
  *  =========
@@ -48,7 +68,7 @@
  *  sure logic to have the Nox index of 1 created from the Nox index from the SGP41.
  *  However with the Nox at 1 and the ticks around 15730, breathing to the SEN66. Make the NOX index 
  *  go not changing and staying 1. The Nox ticks however moved a quickly to 16481 soon after back to 15720.
- *  Is that correct ??? I don't know.
+ *  Is that correct ??? I don't know.  Spending more time to better understand and will update later
  *  
  *  Take CO2
  *  ========
@@ -71,7 +91,7 @@
  *  .........................................................
  *  
  *  Successfully tested on UNO R4 
- *  Wire1
+ *                Wire1
  *                Qwiic connector
  *  SEN6X pin     UNOR4
  *  1 VCC -------- 3v3
