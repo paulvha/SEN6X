@@ -1,7 +1,7 @@
 /*  
- *  version  DRAFT/ December 2024 / paulvha
+ *  version 1.0 / February 2025 / paulvha
  * 
- *  This example will read the MASS / VOC values and save/restore VOC algorithm.
+ *  This example will read the MASS / VOC values and allows to change the VOC algorithm parameters
  *  
  *  VOC values  (source datasheet sen6x)
  *  The VOC algorithm can be customized by tuning 6 different parameters. More details on the tuning 
@@ -15,9 +15,6 @@
  *  
  *  Tested on UNOR4 
  *  
- *  ### TODO #### Artemis ATP, UNOR3, ATmega, Due, ESP32
- *   
- *   
  *   ..........................................................
  *  SEN6x Pinout (backview)
  *               
@@ -41,56 +38,10 @@
  *  6 internal connected to Pin 1
  *  
  *  The pull-up resistors are already installed on the UNOR4 for Wire1.
- * ..........................................................
- * ## TODO
- *  Successfully tested on ESP32 
- *  sen6x pin     ESP32
- *  1 VCC -------- 3v3
- *  2 GND -------- GND 
- *  3 SDA -------- SDA (pin 21)
- *  4 SCL -------- SCL (pin 22)
- *  5 internal connected to pin 2
- *  6 internal connected to Pin 1
- *
- *  The pull-up resistors should be to 3V3
- *  ..........................................................
- * ## TODO
- *  Successfully tested on ATMEGA2560, Due
- *
- *  sen6x pin     ATMEGA
- *  1 VCC -------- 3v3
- *  2 GND -------- GND 
- *  3 SDA -------- SDA
- *  4 SCL -------- SCL
- *  5 internal connected to pin 2
- *  6 internal connected to Pin 1
- *
- *  ..........................................................
- *  Successfully tested on UNO R3
- * ## TODO
- *  sen6x pin     UNO
- *  1 VCC -------- 3v3
- *  2 GND -------- GND 
- *  3 SDA -------- SDA
- *  4 SCL -------- SCL
- *  5 internal connected to pin 2
- *  6 internal connected to Pin 1
- *
- *  When UNO-board is detected some buffers reduced and the call 
- *  to GetErrDescription() is removed to allow enough memory.
- *  
- *  ..........................................................
- *  Successfully tested on Artemis/Apollo3 Sparkfun
- * ## TODO
- *  sen6x pin     Artemis
- *  1 VCC -------- 3v3
- *  2 GND -------- GND 
- *  3 SDA -------- SDA (pin 21)
- *  4 SCL -------- SCL (pin 22)
- *  5 internal connected to pin 2
- *  6 internal connected to Pin 1
- *  
- *  The pull-up resistors should be to 3v3.
+ * ..................................................................
+ * 
+ *  There is NO reason why this sketch would not work on other MCU / board.
+ *  Be aware to add pull-up resistors to 3V3 as I2C on most boards don't have those
  * 
  *  ================================ Disclaimer ======================================
  *  This program is distributed in the hope that it will be useful,
@@ -108,16 +59,15 @@
 
 #include "sen6x.h"
 
-/////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
 /* define the SEN6x sensor connected
- * valid values, SEN60, SEN63, SEN63C, SEN65, SEN66 or SEN68
-*/
- ////////////////////////////////////////////////////////////
+ * valid values, SEN60, SEN63, SEN63C, SEN65, SEN66 or SEN68 */
+///////////////////////////////////////////////////////////////
 const SEN6x_device Device = SEN66;
 
-/////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
 /* define which Wire interface */
- ////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
 #define WIRE_sen6x Wire1
 
 /////////////////////////////////////////////////////////////
@@ -129,10 +79,10 @@ const SEN6x_device Device = SEN66;
 /* define library debug
  * 0 : no messages
  * 1 : request debug messages */
- //////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////
 #define DEBUG 0
 
-///////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////
 /* By default the SEN66 and SEN63 perform CO2 automatic self
  * calibration (ASC). This requires the sensor to be exposed
  * for at least 4 hours during a week to external / outside air.
@@ -159,7 +109,7 @@ void setup() {
   Serial.begin(115200);
   while (!Serial) delay(100);
 
-  serialTrigger((char *) "SEN6x-Example5 (DRAFT):  Display basic values and get/set VOC Algorithm. press <enter> to start");
+  serialTrigger((char *) "SEN6x-Example5: Display basic values and get/set VOC Algorithm. press <enter> to start");
 
   Serial.println(F("Trying to connect."));
 
@@ -170,7 +120,7 @@ void setup() {
   
   // Begin communication channel;
   if (! sen6x.begin(&WIRE_sen6x)) {
-    Serial.println(F("could not auto-detect SEN6x. set as defined in sketch."));
+    Serial.println(F("could not auto-detect SEN6x. Assume as defined in sketch."));
     
     // inform the library about the SEN6x sensor connected
     sen6x.SetDevice(Device);
@@ -178,7 +128,7 @@ void setup() {
 
   // check for connection
   if (! sen6x.probe()) {
-    Serial.println(F("could not probe / connect with sen6x."));
+    Serial.println(F("could not probe / connect with sen6x. \nDid you define the right sensor in sketch?"));
     while(1);
   }
   else  {
@@ -248,7 +198,7 @@ void Display_val()
     if (Device != SEN60) {
       if (Device != SEN63) Serial.print(F("    VOC:  NOX:"));
       Serial.print("  Humidity:  Temperature:");
-      if (Device == SEN66 || Device == SEN63) Serial.print(F("    CO2:"));
+      if (Device == SEN66 || Device == SEN63) Serial.print(F("   CO2:"));
       if (Device == SEN68) Serial.print(F("  HCHO:"));
     }
 
@@ -256,7 +206,7 @@ void Display_val()
     
     if (Device != SEN60) {
       if (Device != SEN63) Serial.print(F("      index  index"));
-      Serial.print(F("      %     [*C]"));
+      Serial.print(F("   %        [*C]"));
       if (Device == SEN66 || Device == SEN63) Serial.print(F("\t\t[ppm]"));
       if (Device == SEN68) Serial.print(F("\t\t[ppb]"));
     }
@@ -335,7 +285,7 @@ void CheckVocValues() {
     if (inp == 1) {
       Serial.print(F("1 IndexOffset\t\t"));
       Serial.print(voc.IndexOffset);
-      Serial.println(" range 1..250");
+      Serial.println(F(" range 1..250"));
       inp = GetInput(1,250);
       if (inp == -100) continue;
       changed = true;
@@ -345,7 +295,7 @@ void CheckVocValues() {
     else if (inp == 2) {
       Serial.print(F("2 LearnTimeOffsetHours   "));
       Serial.print(voc.LearnTimeOffsetHours);
-      Serial.println(" range 1..1000");
+      Serial.println(F(" range 1..1000"));
       inp = GetInput(1,1000);
       if (inp == -100) continue;
       changed = true;
@@ -355,7 +305,7 @@ void CheckVocValues() {
     else if (inp == 3) {
       Serial.print(F("3 LearnTimeGainHours   "));
       Serial.print(voc.LearnTimeGainHours);
-      Serial.println(" range 1..1000");
+      Serial.println(F(" range 1..1000"));
       inp = GetInput(1,1000);
       if (inp == -100) continue;
       changed = true;
@@ -365,7 +315,7 @@ void CheckVocValues() {
     else if (inp == 4) {
       Serial.print(F("4 GateMaxDurationMin   "));
       Serial.print(voc.GateMaxDurationMin);
-      Serial.println(" range 0..3000");
+      Serial.println(F(" range 0..3000"));
       inp = GetInput(0,3000);
       if (inp == -100) continue;
       changed = true;
@@ -375,7 +325,7 @@ void CheckVocValues() {
     else if (inp == 5) {
       Serial.print(F("4 stdInitial   "));
       Serial.print(voc.stdInitial);
-      Serial.println(" range 10..5000");
+      Serial.println(F(" range 10..5000"));
       inp = GetInput(10,5000);
       if (inp == -100) continue;
       changed = true;
@@ -385,7 +335,7 @@ void CheckVocValues() {
     else if (inp == 6) {
       Serial.print(F("6 GainFactor   "));
       Serial.print(voc.GainFactor);
-      Serial.println(" range 1..1000");
+      Serial.println(F(" range 1..1000"));
       inp = GetInput(1,1000);
       if (inp == -100) continue;
       changed = true;
@@ -428,7 +378,7 @@ void Display_Device_info()
   
   // get sen6x serial number
   if (sen6x.GetSerialNumber(num,32) != SEN6x_ERR_OK) {
-    Serial.println(F("could not read serial number."));
+    Serial.println(F("Could not read serial number. Freeze."));
     while(1);
   }
   Serial.print(F("Serial number: "));
@@ -436,7 +386,7 @@ void Display_Device_info()
 
   //get product name
   if (sen6x.GetProductName(num,32) != SEN6x_ERR_OK) {
-    Serial.println(F("could not read product name."));
+    Serial.println(F("Could not read product name. Freeze."));
     while(1);
   }
   
@@ -527,7 +477,7 @@ int GetInput(int minop, int maxop)
       Serial.print(in);
       Serial.print(F(" Invalid option. Min "));
       Serial.print(minop);
-      Serial.print(", Max ");
+      Serial.print(F(", Max "));
       Serial.println(maxop);
     }
     else

@@ -1,5 +1,5 @@
 /*  
- *  version DRAFT / December 2024 / paulvha
+ *  version 1.0 / February 2025 / paulvha
  *    
  *  This example will connect to the SEN6x and an SVM40.
  *  
@@ -9,7 +9,7 @@
  *  the SEN6x and also the VOC relative humidity RH and temperature from the SVM40. 
  *  
  *  The Sen6x has an SGP43 (a later version of the SGP40) as well as an SH41 (also later version).
- *  You need to give the SEN6x > 5 min (or longer) before making any judgement
+ *  You need to give the SEN6x > 5 min (or longer) before making any judgment
  *  
  *  
  *  Tested on UNOR4 
@@ -126,7 +126,7 @@ void setup() {
   Serial.begin(115200);
   while (!Serial) delay(100);
 
-  serialTrigger((char *) "SEN6x-Example24 (DRAFT): Display SEN6x and SVM40. press <enter> to start");
+  serialTrigger((char *) "SEN6x-Example24: Display SEN6x and SVM40. press <enter> to start");
 
   Serial.println(F("Trying to connect."));
   
@@ -139,7 +139,7 @@ void setup() {
 
   // Begin communication channel;
   if (! sen6x.begin(&WIRE_sen6x)) {
-    Serial.println(F("Could not auto-detect SEN6x. Set as defined in sketch."));
+    Serial.println(F("Could not auto-detect SEN6x. Assume as defined in sketch."));
     
     // inform the library about the SEN6x sensor connected
     sen6x.SetDevice(Device);
@@ -150,7 +150,7 @@ void setup() {
   
   // check for SEN6x connection
   if (! sen6x.probe()) {
-    Serial.println(F("Could not probe / connect with SEN6x."));
+    Serial.println(F("Could not probe / connect with SEN6x. \nDid you define the right sensor in sketch?"));
     while(1);
   }
   else  {
@@ -200,7 +200,7 @@ void setup() {
   svm40.SetTempCelsius(true);
   
   if (! sen6x.start()) {
-    Serial.println(F("could not start sen6x."));
+    Serial.println(F("Could not start sen6x. Freeze."));
     while(1);
   }
   else {

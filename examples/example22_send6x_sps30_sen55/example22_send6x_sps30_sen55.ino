@@ -1,15 +1,18 @@
-/*  This example will require an SPS30, SEN55 and a SEN6x.
+/*  
+ *  Version 1.0 / February 2025 / Paulvha
+ *  -initial version
+ * 
+ * This example will require an SPS30, SEN55 and a SEN6x.
  *  
  *  It will read and display the information measured next to each other so you 
  *  can compare the results.
+ * 
+ *  Pressing <enter> during measurement will trigger a cleaning cycle
  *  
  *  Tested on UNO R4
  *  As the SEN6x is 3V3 it is connected to Qwiic I2C/Wire1, the SPS30 serial and the SEN55 to (5v) wire. 
  *  
- *  Version 1.0 / December 2024 / Paulvha
- *  -initial version
- *
- * *  ..........................................................
+ *  ..........................................................
  *  Successfully tested on UNO R4
  *  
  *  //////////////// SEN66 //////////////////////
@@ -30,8 +33,10 @@
  *  2 GND -------- GND 
  *  3 SDA -------- SDA 
  *  4 SCL -------- SCL 
- *  5 NC
- *  6 NC
+ *  5 internal connected to pin 2 
+ *  6 internal connected to Pin 1
+ *  
+ *  The pull-up resistors are already installed on the UNOR4 for Wire1.
  *  
  *  //////////////// SEN55 //////////////////////
  *  
@@ -68,6 +73,10 @@
  *  3 TX  -------- RX 
  *  4 Select      (NOT CONNECTED)
  *  5 GND -------- GND
+ * ..................................................................
+ * 
+ *  There is NO reason why this sketch would not work on other MCU / board.
+ *  Be aware to add pull-up resistors to 3V3 as I2C on most boards don't have those for the SEN6x
  * 
  *  ================================ Disclaimer ======================================
  *  This program is distributed in the hope that it will be useful,
@@ -148,7 +157,7 @@ void setup() {
   Serial.begin(115200);
   while (!Serial) delay(100);
 
-  serialTrigger((char *) "Example22 (DRAFT): SEN6x, SEN55 and SPS30. Press <enter> to start");
+  serialTrigger((char *) "Example22: SEN6x, SEN55 and SPS30. Press <enter> to start");
 
   Serial.println(F("Trying to connect."));
 
@@ -162,7 +171,7 @@ void setup() {
   
   // Begin communication channel;
   if (! sen6x.begin(&WIRE_sen6x)) {
-    Serial.println(F("Could not auto-detect SEN6x. set as defined in sketch."));
+    Serial.println(F("Could not auto-detect SEN6x. Assume as defined in sketch."));
     
     // inform the library about the SEN6x sensor connected
     sen6x.SetDevice(Device);
@@ -201,13 +210,13 @@ void setup() {
   
   // Begin communication channel;
   if (! sen55.begin(&WIRE_sen55)) {
-    Serial.println(F("could not initialize communication channel."));
+    Serial.println(F("could not initialize SEN55 communication channel."));
     while(1);
   }
 
   // check for SEN55 connection
   if (! sen55.probe()) {
-    Serial.println(F("could not probe / connect with SEN55."));
+    Serial.println(F("Could not probe / connect with SEN55. Freeze."));
     while(1);
   }
   else  {
@@ -216,7 +225,7 @@ void setup() {
 
   // reset SEN55
   if (! sen55.reset()) {
-    Serial.println(F("could not reset SEN55."));
+    Serial.println(F("Could not reset SEN55. Freeze."));
     while(1);
   }
 
@@ -247,13 +256,13 @@ void setup() {
   
   if (sen6x.start()) Serial.println(F("SEN6x measurement started"));
   else { 
-    Serial.println(F("could not Start sen6x."));
+    Serial.println(F("Could not Start sen6x. Freeze."));
     while(1);
   }
 
   if (sen55.start()) Serial.println(F("SEN55 measurement started"));
   else { 
-    Serial.println(F("could not Start sen55."));
+    Serial.println(F("Could not Start sen55. Freeze."));
     while(1);
   }
 
@@ -329,7 +338,7 @@ void Clean_sen55()
   uint8_t stat;
   
   if( !sen55.clean()){
-    Serial.println(F("Could not start cleaning Sen55"));
+    Serial.println(F("Could not start cleaning SEN55"));
     return;
   }
   

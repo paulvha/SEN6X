@@ -1,10 +1,10 @@
 /*  
- *  version DRAFT / January 2025 / paulvha
+ *  version 1.0 / February 2025 / paulvha
  *    
  *  This example will connect to the sen6x. It will read the serialnumber, name and different software
  *  levels. 
  *  
- *  It will display the Mass, VOC, NOC, Temperature and humidity information, as well as the raw values
+ *  It will display the Mass, VOC, NOx, Temperature and humidity information, as well as the raw values
  *  from the humidity, temperature, VOC, NOx and CO2 if the sensor provides. NOT valid for SEN60 !
 
  *  January 2025
@@ -31,9 +31,9 @@
  *  The raw value has been trending around 3780, the provided value is trending to 47.09 (external measured 46%)
  *  so the real value makes sense.... the raw value does not.
  * 
- *  After contact with Sensirion I have understood that they know how much impact the surrouding in the SEN6x has to 
- *  the sensor and make the calculated adjustment. If that is not enough (e.g. the SEN6x is further boxed), you can make
- *  more adjustments with the Temperature Offset parameters and /or Temperature acceleration parameters.
+ *  After contact with Sensirion I have understood that they know how much impact the surrounding in the SEN6x has on 
+ *  the sensor and make the calculated adjustments. If that is not enough (e.g. the SEN6x is further boxed), you can make
+ *  more adjustments with the Temperature Offset parameters and/or Temperature acceleration parameters.
  *  
  *  Take Temperature:
  *  =================
@@ -41,10 +41,10 @@
  *  
  *  When just starting the raw value is 4452, the provided value is 22.23C (makes sens /200)
  *  after ~5 min
- *  The raw value is trending around 4429, the real value is 18.6 (external measued 19C)
+ *  The raw value is trending around 4429, the real value is 18.6 (external measured 19C)
  *  so the real value makes sense.... the raw value does not.
  * 
- *  After contact with Sensirion I have understood that they know how much impact the surrouding in the SEN6x has to 
+ *  After contact with Sensirion I have understood that they know how much impact the surrounding in the SEN6x has to 
  *  the sensor and make the calculated adjustment. If that is not enough (e.g. the SEN6x is further boxed), you can make
  *  more adjustments with the Temperature Offset parameters and /or Temperature acceleration parameters.
  *  
@@ -58,9 +58,9 @@
  *  However with the VOC at 101 and the ticks around 32210, breathing to the SEN66. Make the VOC index 
  *  go in big steps (<10 seconds) to 180 and another 10 second later to 97 and slowly return to 100. The  
  *  VOC ticks however moved a little down to 32056 and soon after back to 32220.
- *  Is that correct ??? I don't know. Spending more time to better understand and will update later
+ *  Is that correct ??? I don't know. I am spending more time to better understand and will update later
  *  
- *  Take Nox:
+ *  Take NOx:
  *  =========
  *  According to datasheet: Raw measured Nox ticks without scale factor
  * 
@@ -68,7 +68,7 @@
  *  sure logic to have the Nox index of 1 created from the Nox index from the SGP41.
  *  However with the Nox at 1 and the ticks around 15730, breathing to the SEN66. Make the NOX index 
  *  go not changing and staying 1. The Nox ticks however moved a quickly to 16481 soon after back to 15720.
- *  Is that correct ??? I don't know.  Spending more time to better understand and will update later
+ *  Is that correct ??? I don't know.  I am spending more time to better understand and will update later
  *  
  *  Take CO2
  *  ========
@@ -76,9 +76,7 @@
  *  
  *  --------------------------------------------------------------------------------------------
  *  Tested on UNOR4 
- *  ### TODO #### Artemis ATP, UNOR3, ATmega, Due, ESP32
- *   
- *   
+ *  
  *   ..........................................................
  *  SEN6x Pinout (backview)
  *               
@@ -91,7 +89,7 @@
  *  .........................................................
  *  
  *  Successfully tested on UNO R4 
- *                Wire1
+ *  Wire1
  *                Qwiic connector
  *  SEN6X pin     UNOR4
  *  1 VCC -------- 3v3
@@ -102,56 +100,10 @@
  *  6 internal connected to Pin 1
  *  
  *  The pull-up resistors are already installed on the UNOR4 for Wire1.
- * ..........................................................
- * ## TODO
- *  Successfully tested on ESP32 
- *  SEN55 pin     ESP32
- *  1 VCC -------- 3v3
- *  2 GND -------- GND 
- *  3 SDA -------- SDA (pin 21)
- *  4 SCL -------- SCL (pin 22)
- *  5 internal connected to pin 2
- *  6 internal connected to Pin 1
- *
- *  The pull-up resistors should be to 3V3
- *  ..........................................................
- * ## TODO
- *  Successfully tested on ATMEGA2560, Due
- *
- *  SEN55 pin     ATMEGA
- *  1 VCC -------- 3v3
- *  2 GND -------- GND 
- *  3 SDA -------- SDA
- *  4 SCL -------- SCL
- *  5 internal connected to pin 2
- *  6 internal connected to Pin 1
- *
- *  ..........................................................
- *  Successfully tested on UNO R3
- * ## TODO
- *  SEN55 pin     UNO
- *  1 VCC -------- 3v3
- *  2 GND -------- GND 
- *  3 SDA -------- SDA
- *  4 SCL -------- SCL
- *  5 internal connected to pin 2
- *  6 internal connected to Pin 1
- *
- *  When UNO-board is detected some buffers reduced and the call 
- *  to GetErrDescription() is removed to allow enough memory.
- *  
- *  ..........................................................
- *  Successfully tested on Artemis/Apollo3 Sparkfun
- * ## TODO
- *  SEN55 pin     Artemis
- *  1 VCC -------- 3v3
- *  2 GND -------- GND 
- *  3 SDA -------- SDA (pin 21)
- *  4 SCL -------- SCL (pin 22)
- *  5 internal connected to pin 2
- *  6 internal connected to Pin 1
- *  
- *  The pull-up resistors should be to 3v3.
+ * ..................................................................
+ * 
+ *  There is NO reason why this sketch would not work on other MCU / board.
+ *  Be aware to add pull-up resistors to 3V3 as I2C on most boards don't have those
  * 
  *  ================================ Disclaimer ======================================
  *  This program is distributed in the hope that it will be useful,
@@ -172,22 +124,22 @@
 /////////////////////////////////////////////////////////////
 /* define the SEN6x sensor connected
  * SEN60, SEN63, SEN63C, SEN65, SEN66 or SEN68 */
- ////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
 const SEN6x_device Device = SEN66;
 
-/////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
 /* define which Wire interface */
- ////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
 #define WIRE_sen6x Wire1
 
-/////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
 /* define driver debug
  * 0 : no messages
  * 1 : request debug messages */
- ////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
 #define DEBUG 0
 
-///////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////
 /* By default the SEN66 and SEN63 perform CO2 automatic self
  * calibration (ASC). This requires the sensor to be exposed
  * for at least 4 hours during a week to external / outside air.
@@ -195,7 +147,7 @@ const SEN6x_device Device = SEN66;
  * See SCD4x data sheet, chapter 3.8
  * 
  * true = disable ASC, false keep enabled */
-///////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////
 #define DISABLE_ASC false
 
 ///////////////////////////////////////////////////////////////
@@ -214,7 +166,7 @@ void setup() {
   Serial.begin(115200);
   while (!Serial) delay(100);
 
-  serialTrigger((char *) "SEN6x-Example7 (DRAFT): Display basic values and RAW values. Press <enter> to start");
+  serialTrigger((char *) "SEN6x-Example7: Display basic values and RAW values. Press <enter> to start");
 
   Serial.println(F("Trying to connect."));
 
@@ -225,7 +177,7 @@ void setup() {
 
   // Begin communication channel;
   if (! sen6x.begin(&WIRE_sen6x)) {
-    Serial.println(F("Could not auto-detect SEN6x. Set as defined in sketch."));
+    Serial.println(F("Could not auto-detect SEN6x. Assume as defined in sketch."));
     
     // inform the library about the SEN6x sensor connected
     sen6x.SetDevice(Device);
@@ -233,7 +185,7 @@ void setup() {
 
   // check for connection
   if (! sen6x.probe()) {
-    Serial.println(F("Could not probe / connect with sen6x."));
+    Serial.println(F("Could not probe / connect with sen6x. \nDid you define the right sensor in sketch?"));
     while(1);
   }
   else  {
@@ -419,7 +371,7 @@ void Display_Device_info()
   
   // get SEN6x serial number
   if (sen6x.GetSerialNumber(num,32) != SEN6x_ERR_OK) {
-    Serial.println(F("could not read serial number."));
+    Serial.println(F("could not read serial number. Freeze."));
     while(1);
   }
   Serial.print(F("Serial number: "));
@@ -427,7 +379,7 @@ void Display_Device_info()
 
   //get product name
   if (sen6x.GetProductName(num,32) != SEN6x_ERR_OK) {
-    Serial.println(F("could not read product name."));
+    Serial.println(F("could not read product name. Freeze."));
     while(1);
   }
   Serial.print(F("Product name : "));
@@ -458,7 +410,7 @@ void Display_Device_info()
  */
 void Display_Versions()
 {
-    struct sen6x_version v;
+  struct sen6x_version v;
   
   if (sen6x.GetVersion(&v) != SEN6x_ERR_OK) {
     Serial.println(F("could not read version. Freeze"));

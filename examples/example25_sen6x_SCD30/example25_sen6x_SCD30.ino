@@ -1,5 +1,5 @@
 /*  
- *  version DRAFT / December 2024 / paulvha
+ *  version 1.0 / February 2025 / paulvha
  *    
  *  This example will connect to the SEN6x and an SCD30.
  *  
@@ -11,7 +11,7 @@
  *  
  *  Tested on UNOR4 
  *   
- * *   ..........................................................
+ *  ..........................................................
  *  SEN6x Pinout (backview)
  *               
  *  ---------------------
@@ -71,16 +71,15 @@
 #include "SparkFun_SCD30_Arduino_Library.h" //Click here to get the library: http://librarymanager/All#SparkFun_SCD30
 #include "sen6x.h"
 
-/////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
 /* define the SEN6x sensor connected
- * valid values, SEN60, SEN63, SEN65, SEN66 or SEN68
-*/
- ////////////////////////////////////////////////////////////
+ * valid values, SEN60, SEN63, SEN65, SEN66 or SEN68 */
+////////////////////////////////////////////////////////////
 const SEN6x_device Device = SEN66;
 
-/////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
 /* define which Wire interface */
- ////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
 #define WIRE_sen6x Wire1
 #define WIRE_SCD30 Wire
 
@@ -119,7 +118,7 @@ void setup() {
   Serial.begin(115200);
   while (!Serial) delay(100);
 
-  serialTrigger((char *) "SEN6x-Example25 (DRAFT): Display SEN6x and SCD30. press <enter> to start");
+  serialTrigger((char *) "SEN6x-Example25: Display SEN6x and SCD30. press <enter> to start");
 
   Serial.println(F("Trying to connect."));
 
@@ -130,7 +129,7 @@ void setup() {
 
   // Begin communication channel;
   if (! sen6x.begin(&WIRE_sen6x)) {
-    Serial.println(F("Could not auto-detect SEN6x. Set as defined in sketch."));
+    Serial.println(F("Could not auto-detect SEN6x. Assume as defined in sketch."));
     
     // inform the library about the SEN6x sensor connected
     sen6x.SetDevice(Device);
@@ -141,7 +140,7 @@ void setup() {
   
   // check for SEN6x connection
   if (! sen6x.probe()) {
-    Serial.println(F("Could not probe / connect with SEN6x."));
+    Serial.println(F("Could not probe / connect with SEN6x. \nDid you define the right sensor in sketch?"));
     while(1);
   }
   else  {
@@ -150,7 +149,7 @@ void setup() {
 
   // reset SEN6x
   if (! sen6x.reset()) {
-    Serial.println(F("Could not reset SEN6x."));
+    Serial.println(F("Could not reset SEN6x. Freeze."));
     while(1);
   }
 
@@ -177,7 +176,7 @@ void setup() {
   //The SCD30 has data ready every two seconds (not using the RDY wire connection)
 
   if (! sen6x.start()) {
-    Serial.println(F("could not Start sen6x."));
+    Serial.println(F("Could not Start sen6x. Freeze."));
     while(1);
   }
 }

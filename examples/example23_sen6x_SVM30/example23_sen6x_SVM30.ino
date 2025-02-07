@@ -1,12 +1,12 @@
 /*  
- *  version DRAFT / January 2025 / paulvha
+ *  version 1.0 / February 2025 / paulvha
  *    
  *  This example will connect to the SEN6x and an SVM30.
  *  
- *  The SCD30 is an earlier released device that Measures indoor air quality parameters total VOC (tVOC),
+ *  The SVM30 is an earlier released device that Measures indoor air quality parameters total VOC (tVOC),
  *  CO2-equivalent (CO2eq), relative humidity RH and temperature T
  *  
- *  This sketch will display the Mass, VOC, NOC, Temperature and humidity information, if available from 
+ *  This sketch will display the Mass, VOC, NOx, Temperature and humidity information, if available from 
  *  the SEN6x and also the VOC (tVOC), CO2-equivalent (CO2eq), relative humidity RH and temperature T 
  *  from the SVM30. 
  *  
@@ -19,7 +19,7 @@
  *  CO2 of the SVM30 will show 400 unless something gets near the sensor. A quick breath to the sensor will 
  *  have it react to value of 1386, then 642, 409 and back to 400. A handwave will cause a value of between 
  *  401 - 414. That change is happening within seconds.
- *  The SEN66 reacts slower and takes more time to down. Clearly it is using an average of the past many detection.
+ *  The SEN66 reacts slower and takes more time to down. Clearly it is using an average / calculation of the past many detection.
  *  
  *  == TVOC
  *  The SVM30 TVOC values move repeatedly between 0 and 10 all the time, where the SEN66 value is 1 and stays 1.
@@ -30,7 +30,6 @@
  *  129,163, 208, 231, 237, 231 etc and takes a couple of seconds longer to return 100. Then it 
  *  undershoots in steps to a low of 77 to then slowly climing up to 100. That process takes about 15 seconds. 
  *  Again calculations are being made in the results before sensor readings are returned. 
- *  
  *  
  *  == Temperature & Humidity
  *  Humidity is on the SEN66 is showing 47.14%, where the SVM30 shows 45,42%. 
@@ -97,11 +96,10 @@
 #include "sen6x.h"
 #include "svm30.h" // https://github.com/paulvha/svm30
 
-/////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
 /* define the SEN6x sensor connected
- * valid values, SEN60, SEN63, SEN65, SEN66 or SEN68
-*/
- ////////////////////////////////////////////////////////////
+ * valid values, SEN60, SEN63, SEN65, SEN66 or SEN68 */
+////////////////////////////////////////////////////////////
 const SEN6x_device Device = SEN66;
 
 /////////////////////////////////////////////////////////////
@@ -110,11 +108,11 @@ const SEN6x_device Device = SEN66;
 #define WIRE_sen6x Wire1
 #define WIRE_SVM30 Wire
 
-/////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
 /* define driver debug
  * 0 : no messages
  * 1 : request debug messages */
- ////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
 #define DEBUG_SEN6x 0
 #define DEBUG_SVM30 0
 
@@ -148,7 +146,7 @@ void setup() {
   Serial.begin(115200);
   while (!Serial) delay(100);
 
-  serialTrigger((char *) "SEN6x-Example23 (DRAFT): Display SEN6x and SVM30. press <enter> to start");
+  serialTrigger((char *) "SEN6x-Example23: Display SEN6x and SVM30. press <enter> to start");
 
   Serial.println(F("Trying to connect."));
   
@@ -161,7 +159,7 @@ void setup() {
 
   // Begin communication channel;
   if (! sen6x.begin(&WIRE_sen6x)) {
-    Serial.println(F("Could not auto-detect SEN6x. Set as defined in sketch."));
+    Serial.println(F("Could not auto-detect SEN6x. Assume as defined in sketch."));
     
     // inform the library about the SEN6x sensor connected
     // if incorrect set in the sketch, it may not be able to probe the device 
@@ -173,7 +171,7 @@ void setup() {
   
   // check for connection
   if (! sen6x.probe()) {
-    Serial.println(F("Could not probe / connect with SEN6x."));
+    Serial.println(F("Could not probe / connect with SEN6x. \nDid you define the right sensor in sketch?"));
     while(1);
   }
   else  {
@@ -204,13 +202,13 @@ void setup() {
   WIRE_SVM30.begin();
   
   if (! svm.begin(&WIRE_SVM30) ) {
-    Serial.println( "could not start SGP30. Freeze");
+    Serial.println( "Could not start SVM30. Freeze");
     while(1);    
   }
 
   // try to detect SVM30 sensors
   if (! svm.probe() ) {
-    Serial.println( "could not detect SVM30 sensors. Freeze");
+    Serial.println( "Could not detect SVM30 sensors. Freeze");
     while(1);
   }
   else {
@@ -218,7 +216,7 @@ void setup() {
   }
 
   if (! sen6x.start()) {
-    Serial.println(F("could not Start sen6x."));
+    Serial.println(F("could not Start SEN6x."));
     while(1);
   }
 }
@@ -270,7 +268,7 @@ void KeepTrigger(uint8_t del)
     startMillis = millis();
     
     if (! svm.TriggerSGP30())
-      Serial.println("Error during trigger waiting");
+      Serial.println(F("Error during trigger waiting"));
       
     // this gives 1Hz /1000ms (aboutisch)
     while(millis() - startMillis < 1000);

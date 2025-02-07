@@ -1,31 +1,28 @@
 /*  
- *  version DRAFT / December 2024 / paulvha
+ *  version 1.0/ February 2025 / paulvha
  *    
  *  This example will connect to the sen6x. It will read the serialnumber, name and different software
  *  levels. 
  *  
- *  It will display the Mass, VOC, NOC, Temperature and Humidity information.
+ *  It will display the Mass, VOC, NOx, Temperature and Humidity information.
  *  
  *  when <enter> is pressed a menu is presented to change the SEN6x temperature and/or acceleration 
  *  information. 
  *  
  *  December 2024: Not much of the additional information has been made available by Sensirion about 
- *  these settings
+ *  these settings. Once more information, this sketch will be updated
  *  
- *  while the temperature compensation offset and slope can be set with more accuracy than 1.00.  
+ *  While the temperature compensation offset and slope can be set with more accuracy than 1.00.  
  *  e.g. enter the value is 1.5. 
  *  
  *  
- *  ================================  TEST ============================
+ *  ================================  INFORMATION ============================
  *  Adjusting the temperature (up or down) will also impact the humidity in the opposite direction with 
  *  ~ 2 x applied change to Temperature offset. One can say if temperature is correct so is humidity, but
- *  it is not documented anywhere and the impact is times two !.
+ *  it is not documented anywhere and the impact is times two.
  *  
- *  Tested only on UNOR4, 
+ *  Tested on UNOR4 
  *  
- *  ### TODO #### Artemis ATP, UNOR3, ATmega, Due, ESP32
- *   
- *   
  *   ..........................................................
  *  SEN6x Pinout (backview)
  *               
@@ -49,56 +46,11 @@
  *  6 internal connected to Pin 1
  *  
  *  The pull-up resistors are already installed on the UNOR4 for Wire1.
- * ..........................................................
- * ## TODO
- *  Successfully tested on ESP32 
- *  SEN55 pin     ESP32
- *  1 VCC -------- 3v3
- *  2 GND -------- GND 
- *  3 SDA -------- SDA (pin 21)
- *  4 SCL -------- SCL (pin 22)
- *  5 internal connected to pin 2
- *  6 internal connected to Pin 1
- *
- *  The pull-up resistors should be to 3V3
- *  ..........................................................
- * ## TODO
- *  Successfully tested on ATMEGA2560, Due
- *
- *  SEN55 pin     ATMEGA
- *  1 VCC -------- 3v3
- *  2 GND -------- GND 
- *  3 SDA -------- SDA
- *  4 SCL -------- SCL
- *  5 internal connected to pin 2
- *  6 internal connected to Pin 1
- *
- *  ..........................................................
- *  Successfully tested on UNO R3
- * ## TODO
- *  SEN55 pin     UNO
- *  1 VCC -------- 3v3
- *  2 GND -------- GND 
- *  3 SDA -------- SDA
- *  4 SCL -------- SCL
- *  5 internal connected to pin 2
- *  6 internal connected to Pin 1
- *
- *  When UNO-board is detected some buffers reduced and the call 
- *  to GetErrDescription() is removed to allow enough memory.
- *  
- *  ..........................................................
- *  Successfully tested on Artemis/Apollo3 Sparkfun
- * ## TODO
- *  SEN55 pin     Artemis
- *  1 VCC -------- 3v3
- *  2 GND -------- GND 
- *  3 SDA -------- SDA (pin 21)
- *  4 SCL -------- SCL (pin 22)
- *  5 internal connected to pin 2
- *  6 internal connected to Pin 1
- *  
- *  The pull-up resistors should be to 3v3.
+ * 
+ * ..................................................................
+ * 
+ *  There is NO reason why this sketch would not work on other MCU / board.
+ *  Be aware to add pull-up resistors to 3V3 as I2C on most boards don't have those
  * 
  *  ================================ Disclaimer ======================================
  *  This program is distributed in the hope that it will be useful,
@@ -177,7 +129,7 @@ void setup() {
   Serial.begin(115200);
   while (!Serial) delay(100);
 
-  serialTrigger((char *) "SEN6x-Example2 (DRAFT): Display basic Temperature values. Press <enter> to start");
+  serialTrigger((char *) "SEN6x-Example2: Display basic Temperature values. Press <enter> to start");
 
   Serial.println(F("Trying to connect."));
 
@@ -190,7 +142,7 @@ void setup() {
 
   // Begin communication channel
   if (! sen6x.begin(&WIRE_sen6x)) {
-    Serial.println(F("Could not auto-detect SEN6x. Set as defined in sketch."));
+    Serial.println(F("Could not auto-detect SEN6x. Assume as defined in sketch."));
     
     // inform the library about the SEN6x sensor connected
     sen6x.SetDevice(Device);
@@ -198,7 +150,7 @@ void setup() {
 
   // check for connection
   if (! sen6x.probe()) {
-    Serial.println(F("Could not probe / connect with sen6x."));
+    Serial.println(F("Could not probe / connect with sen6x. \nDid you define the right sensor in sketch?"));
     while(1);
   }
   else  {
@@ -207,21 +159,22 @@ void setup() {
 
   // reset SEN6x
   if (! sen6x.reset()) {
-    Serial.println(F("Could not reset sen6x."));
+    Serial.println(F("Could not reset sen6x. Freeze."));
     while(1);
   }
   
   Display_Device_info();
 
   if (! sen6x.start()) {
-    Serial.println(F("Could not Start sen6x."));
+    Serial.println(F("Could not Start sen6x. Freeze."));
     while(1);
   }
 
   Serial.setTimeout(INPUTDELAY * 1000);
 
-  if (dev == SEN60)
-    Serial.println(F("Temperature settings NOT supported on connected SEN60"));
+  if (dev == SEN60) {
+    Serial.println(F("Temperature settings NOT supported on connected SEN60."));
+  }
   else
     Serial.println(F("\nPress <enter> during measurement to handle Temperature parameters\n"));
 
@@ -231,7 +184,7 @@ void setup() {
       Serial.println(F("CO2 ASC disabled"));
     }
     else {
-     Serial.println(F("Could not disable ASC"));
+      Serial.println(F("Could not disable ASC"));
     }
   }
 
@@ -247,8 +200,7 @@ void loop()
     flush();
     
     if (dev == SEN60) {
-      Serial.println(F("Temperature settings NOT supported on connected SEN60"));
-      delay(2000);
+      Serial.println(F("Temperature settings NOT supported on connected SEN60."));
     }
     else
       CheckTmpValues();
@@ -272,7 +224,7 @@ void Display_val()
     
     if (Device != SEN60) {
       if (Device != SEN63) Serial.print(F("    VOC:  NOX:"));
-      Serial.print("  Humidity:  Temperature:");
+      Serial.print(F("  Humidity:  Temperature:"));
       if (Device == SEN66 || Device == SEN63) Serial.print(F(" CO2:"));
       if (Device == SEN68) Serial.print(F(" HCHO:"));
     }
@@ -445,7 +397,7 @@ void CheckTmpValues() {
     else if (inp == 1) {
       Serial.print(F("1 Temperature offset\t"));
       Serial.print(TempC.offset);
-      Serial.println("  range -10..10"); // articifial limit as no definition available
+      Serial.println(F("  range -10..10")); // articifial limit as no definition available
       Serial.println(F("Provide offset to apply to the ORIGINAL result\n"));
       inp = GetInput(-10,10,&f);
       Serial.println(f);
@@ -458,7 +410,7 @@ void CheckTmpValues() {
     else if (inp == 2) {
       Serial.print(F("2 Temperature slope\t"));
       Serial.print(TempC.slope);
-      Serial.println(" range 0..50"); // articifial limit as no definition available
+      Serial.println(F(" range 0..50")); // articifial limit as no definition available
       Serial.println(F("Provide slope to apply to the ORIGINAL result\n"));
       inp = GetInput(0,50,&f);
       if (inp == -100) continue;
@@ -470,7 +422,7 @@ void CheckTmpValues() {
     else if (inp == 3) {
       Serial.print(F("3 Temperature time (seconds)\t"));
       Serial.print(TempC.time);
-      Serial.println(" range 0..10"); // articifial limit as no definition available
+      Serial.println(F(" range 0..10")); // articifial limit as no definition available
       inp = GetInput(0,10,&f);
       if (inp == -100) continue;
       changed[sel-1] = TempC.time;
@@ -481,7 +433,7 @@ void CheckTmpValues() {
     else if (inp == 4) {
       Serial.print(F("4 slot\t"));
       Serial.print(TempC.slot);
-      Serial.println(" range 0..4");
+      Serial.println(F(" range 0..4"));
       inp = GetInput(0,4,&f);
       if (inp == -100) continue;
       changed[sel-1] = TempC.slot;
@@ -492,7 +444,7 @@ void CheckTmpValues() {
     else if (inp == 5) {
       Serial.print(F("5 constant K"));
       Serial.print(TempAcc.K);
-      Serial.println(" range 0..2");
+      Serial.println(F(" range 0..2"));
       inp = GetInput(0,2,&f);
       if (inp == -100) continue;
       changed[sel-1] = TempAcc.K;
@@ -503,7 +455,7 @@ void CheckTmpValues() {
     else if (inp == 6) {
       Serial.print(F("6 constant P"));
       Serial.print(TempAcc.P);
-      Serial.println(" range 0..2");
+      Serial.println(F(" range 0..2"));
       inp = GetInput(0,2,&f);
       if (inp == -100) continue;
       changed[sel-1] = TempAcc.P;
@@ -514,7 +466,7 @@ void CheckTmpValues() {
     else if (inp == 7) {
       Serial.print(F("7 constant T1"));
       Serial.print(TempAcc.T1);
-      Serial.println(" range 0..2");
+      Serial.println(F(" range 0..2"));
       inp = GetInput(0,2,&f);
       if (inp == -100) continue;
       changed[sel-1] = TempAcc.T1;
@@ -525,7 +477,7 @@ void CheckTmpValues() {
     else if (inp == 8) {
       Serial.print(F("8 constant T2"));
       Serial.print(TempAcc.K);
-      Serial.println(" range 0..2");
+      Serial.println(F(" range 0..2"));
       inp = GetInput(0,2,&f);
       if (inp == -100) continue;
       changed[sel-1] = TempAcc.T2;
@@ -542,7 +494,7 @@ void CheckTmpValues() {
 
     else if (inp == 12) {  // activate heather
       if (sen6x.ActivateSHTHeater()) {
-        Serial.println("Heater activated. Wait 20 seconds");
+        Serial.println(F("Heater activated. Wait 20 seconds"));
         for (int j = 1 ; j < 21 ; j++) {
           delay(1000);
           Serial.print(j);
@@ -561,7 +513,7 @@ void CheckTmpValues() {
 /**
  * Display values. 
  * @param ch :
- * will hold the previous value if changed
+ *  will hold the previous value if changed
  */
 void disp_tmp_info(float *ch)
 {
@@ -636,7 +588,7 @@ void Display_Device_info()
   
   // get SEN6x serial number
   if (sen6x.GetSerialNumber(num,32) != SEN6x_ERR_OK) {
-    Serial.println(F("could not read serial number."));
+    Serial.println(F("could not read serial number.Freeze. "));
     while(1);
   }
   Serial.print(F("Serial number: "));
@@ -644,7 +596,7 @@ void Display_Device_info()
 
   //get product name
   if (sen6x.GetProductName(num,32) != SEN6x_ERR_OK) {
-    Serial.println(F("could not read product name."));
+    Serial.println(F("could not read product name.Freeze. "));
     while(1);
   }
   Serial.print(F("Product name : "));
@@ -675,7 +627,7 @@ void Display_Device_info()
  */
 void Display_Versions()
 {
-    struct sen6x_version v;
+  struct sen6x_version v;
   
   if (sen6x.GetVersion(&v) != SEN6x_ERR_OK) {
     Serial.println(F("could not read version. Freeze"));
@@ -735,9 +687,9 @@ int GetInput(int minop, int maxop, float *f)
     
     if(in > maxop || in < minop) {
       Serial.print(in);
-      Serial.print(" Invalid option. Min ");
+      Serial.print(F(" Invalid option. Min "));
       Serial.print(minop);
-      Serial.print(", Max ");
+      Serial.print(F(", Max "));
       Serial.println(maxop);
     }
     else

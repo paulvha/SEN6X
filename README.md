@@ -3,9 +3,7 @@
 ## ===========================================================
 
 A program to set instructions and get information from an SEN6x. It has been
-tested to run I2C communication on UNOR4 Wifi(MORE TO FOLLOW !!!)
-
-DRAFT DRAFT DRAFT DRAFT DRAFT DRAFT DRAFT DRAFT DRAFT DRAFT DRAFT DRAFT DRAFT 
+tested to run I2C communication on UNOR4 Wifi
 
 <br> A detailed description of the findings are in SEN6x.odt
 
@@ -21,6 +19,7 @@ Examples 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30 have a dependency on other l
 Obtain the zip and install like any other.
 
 ## Program usage
+Install like any other external library
 
 ### Program options
 See the description in the top of the sketch and read the documentation (odt)
@@ -38,6 +37,8 @@ See the description in the top of the sketch and read the documentation (odt)
  * ver draft 1.7 : added and updated CO2 examples. Updates to SRC-code routines
  * ver draft 1.8 : updated examples with CO2 ASc, added example7, Updates to SRC-code routines
  * ver draft 1.9 : updated example7 with information about RAW values
+### Version 1.0 / February 2025
+ * Version 1 : added /updated examples and documentation
 
 ## Author
  * Paul van Haastrecht (paulvha@hotmail.com)

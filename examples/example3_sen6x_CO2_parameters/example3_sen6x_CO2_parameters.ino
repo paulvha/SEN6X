@@ -1,26 +1,24 @@
 /*  
- *  version DRAFT / January 2025/ paulvha
+ *  version 1.0 / February 2025/ paulvha
  *    
  *  This example will connect to the sen6x. It will read the serialnumber, name and different software
  *  levels. 
  *  
- *  It will display the Mass, VOC, NOC, Temperature and Humidity information.
+ *  It will display the Mass, VOC, NOx, Temperature and Humidity information.
  *  
  *  when <enter> is pressed a menu is presented to change the SEN6x CO2 parameters. 
  *  
- *  WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+ *  WARNING begin WARNING begin WARNING begin WARNING begin WARNING begin WARNING begin WARNING begin 
  *  
- *  there is an excellent datasheet for the SCD4x CO2 sensor, which describes the different parameter setting and  
- *  action that can be performed by the SCD41 inside the SEN6x. Make sure to read this to understand the impact of 
- *  the changes. 
+ *  There is an excellent datasheet for the SCD4x CO2 sensor, which describes the different parameter setting and  
+ *  action that can be performed by the SCD41 inside the SEN6x.
+ * 
+ *  MAKES SURE TO READ THIS TO UNDERSTAND THE IMPACT OF THE CHANGES !! 
  *  
- *   WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+ *  WARNING end WARNING end WARNING end WARNING end WARNING end WARNING end WARNING end WARNING end 
  *  
- *  Tested only on UNOR4, 
+ *  *  Tested on UNOR4 
  *  
- *  ### TODO #### Artemis ATP, UNOR3, ATmega, Due, ESP32
- *   
- *   
  *   ..........................................................
  *  SEN6x Pinout (backview)
  *               
@@ -44,56 +42,11 @@
  *  6 internal connected to Pin 1
  *  
  *  The pull-up resistors are already installed on the UNOR4 for Wire1.
- * ..........................................................
- * ## TODO
- *  Successfully tested on ESP32 
- *  SEN55 pin     ESP32
- *  1 VCC -------- 3v3
- *  2 GND -------- GND 
- *  3 SDA -------- SDA (pin 21)
- *  4 SCL -------- SCL (pin 22)
- *  5 internal connected to pin 2
- *  6 internal connected to Pin 1
- *
- *  The pull-up resistors should be to 3V3
- *  ..........................................................
- * ## TODO
- *  Successfully tested on ATMEGA2560, Due
- *
- *  SEN55 pin     ATMEGA
- *  1 VCC -------- 3v3
- *  2 GND -------- GND 
- *  3 SDA -------- SDA
- *  4 SCL -------- SCL
- *  5 internal connected to pin 2
- *  6 internal connected to Pin 1
- *
- *  ..........................................................
- *  Successfully tested on UNO R3
- * ## TODO
- *  SEN55 pin     UNO
- *  1 VCC -------- 3v3
- *  2 GND -------- GND 
- *  3 SDA -------- SDA
- *  4 SCL -------- SCL
- *  5 internal connected to pin 2
- *  6 internal connected to Pin 1
- *
- *  When UNO-board is detected some buffers reduced and the call 
- *  to GetErrDescription() is removed to allow enough memory.
- *  
- *  ..........................................................
- *  Successfully tested on Artemis/Apollo3 Sparkfun
- * ## TODO
- *  SEN55 pin     Artemis
- *  1 VCC -------- 3v3
- *  2 GND -------- GND 
- *  3 SDA -------- SDA (pin 21)
- *  4 SCL -------- SCL (pin 22)
- *  5 internal connected to pin 2
- *  6 internal connected to Pin 1
- *  
- *  The pull-up resistors should be to 3v3.
+ * 
+ * ..................................................................
+ * 
+ *  There is NO reason why this sketch would not work on other MCU / board.
+ *  Be aware to add pull-up resistors to 3V3 as I2C on most boards don't have those
  * 
  *  ================================ Disclaimer ======================================
  *  This program is distributed in the hope that it will be useful,
@@ -134,7 +87,7 @@ const SEN6x_device Device = SEN66;
  * 0 : no messages
  * 1 : request debug messages */
 ////////////////////////////////////////////////////////////
-#define DEBUG 1
+#define DEBUG 0
 
 /////////////////////////////////////////////////////////////
 // wait max INPUTDELAY seconds on input
@@ -153,12 +106,12 @@ struct sen6x_RHT_comp TempAcc;
 bool TempC_default = true;        // is information in structure still default
 bool TempAcc_default = true;      // is information in structure still default
 int Type_temp = TEMP_TYPE;
-uint8_t dev = Device;                      // Sen6x device type attached
+uint8_t dev = Device;             // Sen6x device type attached
 
 bool header = true;
 
-uint16_t Sen6x_altitude = 0;               // default value
-uint16_t Sen6x_pressure = 1013;            // default hPa
+uint16_t Sen6x_altitude = 0;      // default value
+uint16_t Sen6x_pressure = 1013;   // default hPa
 uint16_t Sen6x_recal;
 
 
@@ -166,7 +119,7 @@ void setup() {
   Serial.begin(115200);
   while (!Serial) delay(100);
 
-  serialTrigger((char *) "SEN6x-Example3 (DRAFT): Display basic values and handle C02 parameters. Press <enter> to start");
+  serialTrigger((char *) "SEN6x-Example3: Display basic values and handle C02 parameters. Press <enter> to start");
 
   Serial.println(F("Trying to connect."));
 
@@ -179,7 +132,7 @@ void setup() {
 
   // Begin communication channel
   if (! sen6x.begin(&WIRE_sen6x)) {
-    Serial.println(F("Could not auto-detect SEN6x. Set as defined in sketch."));
+    Serial.println(F("Could not auto-detect SEN6x. Assume as defined in sketch."));
     
     // inform the library about the SEN6x sensor connected
     sen6x.SetDevice(Device);
@@ -187,7 +140,7 @@ void setup() {
 
   // check for connection
   if (! sen6x.probe()) {
-    Serial.println(F("Could not probe / connect with sen6x."));
+    Serial.println(F("Could not probe / connect with sen6x.\nDid you define the right sensor in sketch?"));
     while(1);
   }
   else  {
@@ -196,19 +149,19 @@ void setup() {
 
   // reset SEN6x
   if (! sen6x.reset()) {
-    Serial.println(F("Could not reset sen6x."));
+    Serial.println(F("Could not reset sen6x. Freeze."));
     while(1);
   }
   
   Display_Device_info();
 
   if (! sen6x.start()) {
-    Serial.println(F("Could not Start sen6x."));
+    Serial.println(F("Could not Start sen6x. Freeze."));
     while(1);
   }
 
   Serial.setTimeout(INPUTDELAY * 1000);
-
+ 
   if (dev != SEN60 && dev != SEN66)
     Serial.println(F("Temperature settings NOT supported on connected SEN60"));
   else
@@ -249,7 +202,7 @@ void Display_val()
     
     if (Device != SEN60) {
       if (Device != SEN63) Serial.print(F("    VOC:  NOX:"));
-      Serial.print("  Humidity:  Temperature:");
+      Serial.print(F("  Humidity:  Temperature:"));
       if (Device == SEN66 || Device == SEN63) Serial.print(F(" CO2:"));
       if (Device == SEN68) Serial.print(F(" HCHO:"));
     }
@@ -452,7 +405,7 @@ void Display_Device_info()
   
   // get SEN6x serial number
   if (sen6x.GetSerialNumber(num,32) != SEN6x_ERR_OK) {
-    Serial.println(F("could not read serial number."));
+    Serial.println(F("could not read serial number. Freeze."));
     while(1);
   }
   Serial.print(F("Serial number: "));
@@ -460,7 +413,7 @@ void Display_Device_info()
 
   //get product name
   if (sen6x.GetProductName(num,32) != SEN6x_ERR_OK) {
-    Serial.println(F("could not read product name."));
+    Serial.println(F("could not read product name.Freeze."));
     while(1);
   }
   Serial.print(F("Product name : "));
@@ -491,7 +444,7 @@ void Display_Device_info()
  */
 void Display_Versions()
 {
-    struct sen6x_version v;
+  struct sen6x_version v;
   
   if (sen6x.GetVersion(&v) != SEN6x_ERR_OK) {
     Serial.println(F("could not read version. Freeze"));
@@ -551,9 +504,9 @@ int GetInput(int minop, int maxop, float *f)
     
     if(in > maxop || in < minop) {
       Serial.print(in);
-      Serial.print(" Invalid option. Min ");
+      Serial.print(F(" Invalid option. Min "));
       Serial.print(minop);
-      Serial.print(", Max ");
+      Serial.print(F(", Max "));
       Serial.println(maxop);
     }
     else

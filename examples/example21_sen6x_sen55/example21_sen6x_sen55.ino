@@ -1,15 +1,16 @@
 /*  
- *  version 1.0 / December 2024 / paulvha
+ *  version 1.0 / February 2025 / paulvha
  *    
  *  This example will connect to the sen6x and sen55. 
  *  
- *  you can switch (by pressing enter during measurement) between display the Mass, VOC, NOC, 
+ *  you can switch (by pressing enter during measurement) between display the Mass, VOC, NOx, 
  *  Temperature and humidity information, OR display the Mass and PM numbers. 
+ * 
+ *  Pressing <enter> during measurement will change output
  *  
+ *  Tested on UNOR4 Wifi
  *  
- *  Tested on UNOR4. 
- *  
- *  //////////////// SEN6x //////////////////////
+ * .........................................................
  *  SEN6x Pinout (backview)
  *               
  *  ---------------------
@@ -18,16 +19,20 @@
  *  !           \       /|  
  *  !            \     / |
  *  !-------------=====---
- *
+ *  .........................................................
+ *  
+ *  Successfully tested on UNO R4 
  *  Wire1
- *  SEN6x pin     UNO R4
- *                Qwiic
+ *                Qwiic connector
+ *  SEN6X pin     UNOR4
  *  1 VCC -------- 3v3
  *  2 GND -------- GND 
  *  3 SDA -------- SDA 
  *  4 SCL -------- SCL 
+ *  5 internal connected to pin 2 
+ *  6 internal connected to Pin 1
  *  
- *  The pull-up resistors are already installed on the UNOR4 for Wire1.
+ *  The pull-up resistors are already installed on the UNOR4 Wifi for Wire1.
  * 
  *  //////////////// sen55 //////////////////////
  *  
@@ -49,7 +54,11 @@
  *  6 NC
  *  
  *  The pull-up resistors to 5V.
- *  
+ * 
+ *  ....................................................................... 
+ *  There is NO reason why this sketch would not work on other MCU / board.
+ *  Be aware to add pull-up resistors to 3V3 as I2C on most boards don't have those for the SEN6x
+ * 
  *  ================================ Disclaimer ======================================
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -87,7 +96,6 @@ const SEN6x_device Device = SEN66;
 #define SEN6x_DEBUG 0
 #define SEN55_DEBUG 0
 
-
 ///////////////////////////////////////////////////////////////
 /* By default the SEN66 and SEN63 perform CO2 automatic self
  * calibration (ASC). This requires the sensor to be exposed
@@ -120,7 +128,7 @@ void setup() {
   Serial.begin(115200);
   while (!Serial) delay(100);
 
-  serialTrigger((char *) "SEN6x-Example21: (DRAFT) SEN6x, sen55. Press <enter> to start");
+  serialTrigger((char *) "SEN6x-Example21: SEN6x, SEN55. Press <enter> to start");
 
   Serial.println(F("Trying to connect."));
 
@@ -134,7 +142,7 @@ void setup() {
   
   // Begin communication channel;
   if (! sen6x.begin(&WIRE_sen6x)) {
-    Serial.println(F("could not auto-detect SEN6x. set as defined in sketch."));
+    Serial.println(F("could not auto-detect SEN6x. Assume as defined in sketch."));
     
     // inform the library about the SEN6x sensor connected
     sen6x.SetDevice(Device);
@@ -145,7 +153,7 @@ void setup() {
   
   // check for SEN6x connection
   if (! sen6x.probe()) {
-    Serial.println(F("could not probe / connect with SEN6x."));
+    Serial.println(F("could not probe / connect with SEN6x.\nDid you define the right sensor in sketch?"));
     while(1);
   }
   else  {
@@ -168,18 +176,18 @@ void setup() {
     }
   }
 
-  /////////////////////////////// sen55 /////////////////////////////////////
+  /////////////////////////////// SEN55 /////////////////////////////////////
   WIRE_sen55.begin();
   
   // Begin communication channel;
   if (! sen55.begin(&WIRE_sen55)) {
-    Serial.println(F("could not initialize communication channel."));
+    Serial.println(F("Could not initialize communication channel for SEN55."));
     while(1);
   }
 
   // check for sen55 connection
   if (! sen55.probe()) {
-    Serial.println(F("could not probe / connect with sen55."));
+    Serial.println(F("Could not probe / connect with sen55."));
     while(1);
   }
   else  {
@@ -262,7 +270,7 @@ void Display_val()
     
     if (Device != SEN60) {
       if (Device != SEN63) Serial.print(F("    VOC:  NOX:"));
-      Serial.print("  Humidity:  Temperature:");
+      Serial.print(F("  Humidity:  Temperature:"));
       if (Device == SEN66 || Device == SEN63) Serial.print(F("   CO2:"));
       if (Device == SEN68) Serial.print(F("  HCHO:"));
     }
@@ -432,7 +440,7 @@ bool Check_error_6x() {
 
   if (sen6x.GetStatusReg(&stat) == SEN6x_ERR_OK) return(true);
 
-  Serial.println("ERROR !!");
+  Serial.println(F("ERROR !!"));
   if (stat & STATUS_SPEED_ERROR_6x) {
     Serial.println(F("Fan speed is too high or too low"));
   }

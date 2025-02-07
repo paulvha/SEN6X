@@ -1,14 +1,14 @@
-/*  This example will require BOTH an SPS30 and a SEN6x.
+/*  
+ *  version 1.0 / February 2025 / paulvha
+ * 
+ *  This example will require BOTH an SPS30 and a SEN6x.
  *  
  *  It will read both and display the information measured next to each other so you 
  *  can compare the results.
  *   
  *  As the SEN6x is 3V3 we connect to I2C and the SPS30 serial. 
  *  
- *  Version DRAFT / December 2024 / Paulvha
- *  -initial version
- *
- * *  ..........................................................
+ *  ..........................................................
  *  Successfully tested on UNO R4
  *  
  *  //////////////// SEN66 //////////////////////
@@ -23,12 +23,16 @@
  *  !-------------=====---
  *  
  *  Wire1
- *  SEN6x pin     UNO R4
- *                QWICC / STEMMA connector
+ *                Qwiic connector
+ *  SEN6X pin     UNOR4
  *  1 VCC -------- 3v3
  *  2 GND -------- GND 
  *  3 SDA -------- SDA 
  *  4 SCL -------- SCL 
+ *  5 internal connected to pin 2 
+ *  6 internal connected to Pin 1
+ *  
+ *  The pull-up resistors are already installed on the UNOR4 for Wire1.
  *  
  *  //////////////// SPS30 //////////////////////
  *  
@@ -44,6 +48,11 @@
  *  3 TX  -------- RX 
  *  4 Select      (NOT CONNECTED)
  *  5 GND -------- GND
+ * 
+ * ..................................................................
+ * 
+ *  There is NO reason why this sketch would not work on other MCU / board.
+ *  Be aware to add pull-up resistors to 3V3 as I2C on most boards don't have those for the SEN6x
  * 
  *  ================================ Disclaimer ======================================
  *  This program is distributed in the hope that it will be useful,
@@ -68,9 +77,9 @@
 //////////////////////////////////////////////////////////////
 const SEN6x_device Device = SEN66;
 
-/////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
 /* define which Wire interface for sen6x*/
- ////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
 #define WIRE_sen6x Wire1
 
 /////////////////////////////////////////////////////////////
@@ -118,7 +127,7 @@ void setup() {
   Serial.begin(115200);
   while (!Serial) delay(100);
 
-  serialTrigger((char *) "Example20:(DRAFT) SEN6x and SPS30. Press <enter> to start");
+  serialTrigger((char *) "Example20: SEN6x and SPS30. Press <enter> to start");
 
   Serial.println(F("Trying to connect."));
 
@@ -131,7 +140,7 @@ void setup() {
   
   // Begin communication channel;
   if (! sen6x.begin(&WIRE_sen6x)) {
-    Serial.println(F("Could not auto-detect SEN6x. Set as defined in sketch."));
+    Serial.println(F("Could not auto-detect SEN6x. Assume as defined in sketch."));
     
     // inform the library about the SEN6x sensor connected
     sen6x.SetDevice(Device);
@@ -142,7 +151,7 @@ void setup() {
   
   // check for SEN6x connection
   if (! sen6x.probe()) {
-    Serial.println(F("Could not probe / connect with SEN6x."));
+    Serial.println(F("Could not probe / connect with SEN6x.\nDid you define the right sensor in sketch?"));
     while(1);
   }
   else  {

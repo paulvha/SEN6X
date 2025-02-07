@@ -1,9 +1,9 @@
 /*  
- *  version DRAFT / December 2024 / paulvha
+ *  version 1.0 / February 2024 / paulvha
  *    
  *  This example will connect to the SEN6x (wire1), MH-Z19B (Serial1) and an CCS811 (Wire).
  * 
- *  This sketch will display the Mass, VOC, NOC, Temperature and humidity information, if available from 
+ *  This sketch will display the Mass, VOC, NOx, Temperature and humidity information, if available from 
  *  the SEN6x. Also the MH-Z19B CO2 and Temp as well as the VOC and CO2 from the CCS811. 
  *  
  *  Tested on UNOR4 
@@ -104,15 +104,15 @@
 #include "MHZ19.h" //Click here to get the library Jonathan Dempsey: http://librarymanager/All#MH-Z19
 #include "Adafruit_CCS811.h" //Click here to get the library: http://librarymanager/All#Adafruit_CCS8
 
-/////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
 /* define the SEN6x sensor connected
  * valid values, SEN60, SEN63, SEN65, SEN66 or SEN68 */
- ////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
 const SEN6x_device Device = SEN66;
 
-/////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
 /* define which Wire interface */
- ////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
 #define WIRE_sen6x Wire1
 #define WIRE_ccs811 Wire
 
@@ -163,7 +163,7 @@ void setup() {
   Serial.begin(115200);
   while (!Serial) delay(100);
 
-  serialTrigger((char *) "SEN6x-Example29 (DRAFT): Display SEN6x,MH-Z19B and CCS811. press <enter> to start");
+  serialTrigger((char *) "SEN6x-Example29: Display SEN6x,MH-Z19B and CCS811. press <enter> to start");
 
   Serial.println(F("Trying to connect."));
 
@@ -197,7 +197,7 @@ void setup() {
 
   // Begin communication channel;
   if (! sen6x.begin(&WIRE_sen6x)) {
-    Serial.println(F("Could not auto-detect SEN6x. Set as defined in sketch."));
+    Serial.println(F("Could not auto-detect SEN6x. Assume as defined in sketch."));
     
     // inform the library about the SEN6x sensor connected
     // if incorrect set in the sketch, it may not be able to probe the device 
@@ -209,7 +209,7 @@ void setup() {
   
   // check for connection
   if (! sen6x.probe()) {
-    Serial.println(F("Could not probe / connect with SEN6x."));
+    Serial.println(F("Could not probe / connect with SEN6x. \nDid you define the right sensor in sketch?"));
     while(1);
   }
   else  {
@@ -218,7 +218,7 @@ void setup() {
 
   // reset SEN6x
   if (! sen6x.reset()) {
-    Serial.println(F("Could not reset sen6x."));
+    Serial.println(F("Could not reset sen6x. Freeze."));
     while(1);
   }
 

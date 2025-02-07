@@ -1,15 +1,15 @@
 /*  
- *  version DRAFT / December 2024 / paulvha
+ *  version 1.0 / February 2025 / paulvha
  *    
  *  This example will connect to the SEN6x and an CCS811.
  *  
- *  This sketch will display the Mass, VOC, NOC, Temperature and humidity information, if available from 
+ *  This sketch will display the Mass, VOC, NOx, Temperature and Humidity information, if available from 
  *  the SEN6x and also the VOC and CO2 from the CCS811. 
  *  
  *  
  *  Tested on UNOR4 
  *   
- * *   ..........................................................
+ *  ..........................................................
  *  SEN6x Pinout (backview)
  *               
  *  ---------------------
@@ -69,6 +69,7 @@
  *  During test the CCS811 would jump high by even touching the wires (especially SCL-line). I suspect
  *  that because I used a cheap board (CJMCU8118) the lines are quickly to long. Hence I connected with 
  *  a level converter the CCS-811 to the Wire. It then worked stable. 
+ * 
  *  ================================ Disclaimer ======================================
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -85,15 +86,15 @@
 #include "sen6x.h"
 #include "Adafruit_CCS811.h" //Click here to get the library: http://librarymanager/All#Adafruit_CCS811
 
-/////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
 /* define the SEN6x sensor connected
  * valid values, SEN60, SEN63, SEN65, SEN66 or SEN68 */
- ////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
 const SEN6x_device Device = SEN66;
 
-/////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
 /* define which Wire interface */
- ////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
 #define WIRE_sen6x Wire1
 #define WIRE_ccs811 Wire
 
@@ -138,7 +139,7 @@ void setup() {
   Serial.begin(115200);
   while (!Serial) delay(100);
 
-  serialTrigger((char *) "SEN6x-Example26 (DRAFT): Display SEN6x and CCS811. press <enter> to start");
+  serialTrigger((char *) "SEN6x-Example26: Display SEN6x and CCS811. press <enter> to start");
 
   Serial.println(F("Trying to connect."));
 
@@ -148,7 +149,7 @@ void setup() {
   
   // Initialize CCS811 library
   if (! mySensor.begin(CCS811_ADDR,&WIRE_ccs811)){
-    Serial.println( "Could not start CCS811. Freeze");
+    Serial.println(F("Could not start CCS811. Freeze"));
     while(1);    
   }
   else
@@ -165,7 +166,7 @@ void setup() {
 
   // Begin communication channel;
   if (! sen6x.begin(&WIRE_sen6x)) {
-    Serial.println(F("Could not auto-detect SEN6x. set as defined in sketch."));
+    Serial.println(F("Could not auto-detect SEN6x. Assume as defined in sketch."));
     
     // inform the library about the SEN6x sensor connected
     // if incorrect set in the sketch, it may not be able to probe the device 
@@ -177,7 +178,7 @@ void setup() {
 
   // check for connection
   if (! sen6x.probe()) {
-    Serial.println(F("Could not probe / connect with SEN6x."));
+    Serial.println(F("Could not probe / connect with SEN6x. \nDid you define the right sensor in sketch?"));
     while(1);
   }
   else  {

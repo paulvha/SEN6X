@@ -20,7 +20,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  **********************************************************************
- * Version DRAFT 1.8 / January 2025 /paulvha
+ * Version DRAFT 1.9 / January 2025 /paulvha
  * - updated version 
  *
  *********************************************************************
@@ -98,6 +98,10 @@ void SEN6x::EnableDebugging(uint8_t act) {
  * @param port : I2C communication channel to be used
  *
  * User must have preform the wirePort.begin() in the sketch.
+ * 
+ * @return
+ *  true : if SEN6x sensor type was identified
+ * false : if not able
  */
 bool SEN6x::begin(TwoWire *wirePort)
 {
@@ -155,9 +159,8 @@ bool SEN6x::stop()
   if (! _started) return(true);
   
   if (! SendCommand(SEN6x_STOP_MEASUREMENT)) return(false);
-     
-  // give time to stop
-  delay(1000);
+
+  delay(1000);          // give time to stop
     
   _started = false;
 
@@ -165,7 +168,7 @@ bool SEN6x::stop()
 }
 
 /**
- *  @brief perform a clean (higher fan speed). 
+ * @brief perform a clean (higher fan speed). 
  * 
  * One should wait for clean to finish, but there is no
  * indication that clean is in progress.
@@ -175,6 +178,10 @@ bool SEN6x::stop()
  * then automatically stopped. 
  * 
  * Wait at least 10s after this command before starting a measurement.
+ * 
+ * @return
+ * true : was successfully send
+ * false: error
  * 
  */
 bool SEN6x::clean()
@@ -202,9 +209,7 @@ bool SEN6x::clean()
 bool SEN6x::FWCheck(uint8_t major, uint8_t minor) 
 {
   // do we have the current FW level
-  if (_FW_Major == 0) {
-      if (! probe()) return (false);
-  }
+  if (_FW_Major == 0)  if (! probe()) return (false);
 
   // if requested level is HIGHER than current
   if (major > _FW_Major || minor > _FW_Minor) return(false);
@@ -1194,11 +1199,11 @@ bool SEN6x::CheckToStop()
 }
 
 /**
- * @brief Start the sensor if stopped during CheckToStop()
+ * @brief Start the sensor if stopped e.g. during CheckToStop()
  * 
  * @return :
  * true => Sensor is started
- * false => erroor
+ * false => error
  */
 bool SEN6x::CheckWasStarted()
 {
@@ -1210,7 +1215,7 @@ bool SEN6x::CheckWasStarted()
     }
       
     // give some time to start
-    delay(100);
+    delay(1000);
     
     _restart = false;
   }
@@ -1237,7 +1242,7 @@ void SEN6x::DebugPrintf(const char *pcFmt, ...)
 /**
  * @brief set the opcode for the command for the sensor type
  * 
- @return
+ * @return
  * true : connected sensor supports the function 
  * false: connected sensor does NOT support the requested command
  */
@@ -1318,7 +1323,7 @@ uint16_t SEN6x::byte_to_Uint16_t(int x)
  * @brief : translate 2 bytes to int16_t
  * @param x : offset in _Receive_BUF
  *
- * return : uint16_t number
+ * return : int16_t number
  */
 int16_t SEN6x::byte_to_int16_t(int x)
 {
@@ -1329,7 +1334,6 @@ int16_t SEN6x::byte_to_int16_t(int x)
   
   return conv;
 }
-
 
 ////////////////// I2C routines ///////////////////////////////
 //************************************************************/
@@ -1350,6 +1354,7 @@ void SEN6x::I2C_init()
  *
  * @return
  * SEN6x_ERR_UNKNOWNCMD : command not supported by device
+ * SEN6x_ERR_OK: all is good
  */
 uint8_t SEN6x::I2C_fill_buffer(uint16_t cmnd, void *val)
 {
@@ -1708,7 +1713,7 @@ uint8_t SEN6x::I2C_ReadToBuffer(uint8_t count, bool chk_zero)
  *
  * Source : datasheet SEN6x
  *
- * return CRC
+ * @return CRC
  */
 uint8_t SEN6x::I2C_calc_CRC(uint8_t data[2])
 {

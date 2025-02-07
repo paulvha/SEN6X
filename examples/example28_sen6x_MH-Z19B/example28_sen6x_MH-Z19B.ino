@@ -1,15 +1,15 @@
 /*  
- *  version DRAFT / January 2025 / paulvha
+ *  version 1.0 / February 2025 / paulvha
  *    
  *  This example will connect to the SEN6x and an MH-Z19B.
  *  
- *  This sketch will display the Mass, VOC, NOC, Temperature and humidity information, if available from 
+ *  This sketch will display the Mass, VOC, NOx, Temperature and humidity information, if available from 
  *  the SEN6x and also the CO2 and Temp from the MH-Z19B. 
  *  
  *  
  *  Tested on UNOR4 
  *   
- * *   ..........................................................
+ *  ..........................................................
  *  SEN6x Pinout (backview)
  *               
  *  ---------------------
@@ -48,7 +48,10 @@
  *  5 TX   ------------- RX1
  *  6 RX   ------------- TX1
  *  7 NC
- *  
+ *  .........................................................................
+ *  There is NO reason why this sketch would not work on other MCU / board.
+ *  Be aware to add pull-up resistors to 3V3 as I2C on most boards don't have those
+ *
  *  ================================ Disclaimer ======================================
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -68,12 +71,12 @@
 /////////////////////////////////////////////////////////////
 /* define the SEN6x sensor connected
  * valid values, SEN60, SEN63, SEN65, SEN66 or SEN68 */
- ////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
 const SEN6x_device Device = SEN66;
 
-/////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
 /* define which Wire interface */
- ////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
 #define WIRE_sen6x Wire1
 
 /////////////////////////////////////////////////////////////
@@ -116,7 +119,7 @@ void setup() {
   Serial.begin(115200);
   while (!Serial) delay(100);
 
-  serialTrigger((char *) "SEN6x-Example28 (DRAFT): Display SEN6x and MH-Z19B. press <enter> to start");
+  serialTrigger((char *) "SEN6x-Example28: Display SEN6x and MH-Z19B. press <enter> to start");
 
   Serial.println(F("Trying to connect."));
 
@@ -136,7 +139,7 @@ void setup() {
 
   // Begin communication channel;
   if (! sen6x.begin(&WIRE_sen6x)) {
-    Serial.println(F("could not auto-detect SEN6x. set as defined in sketch."));
+    Serial.println(F("could not auto-detect SEN6x. Assume as defined in sketch."));
     
     // inform the library about the SEN6x sensor connected
     // if incorrect set in the sketch, it may not be able to probe the device 
@@ -148,7 +151,8 @@ void setup() {
 
   // check for connection
   if (! sen6x.probe()) {
-    Serial.println(F("could not probe / connect with SEN6x."));
+    Serial.println(F("Could not probe / connect with SEN6x. \nDid you define the right sensor in sketch?"));
+    while(1);
     while(1);
   }
   else  {
@@ -157,7 +161,7 @@ void setup() {
 
   // reset SEN6x
   if (! sen6x.reset()) {
-    Serial.println(F("could not reset sen6x."));
+    Serial.println(F("Could not reset sen6x. Freeze."));
     while(1);
   }
 
@@ -172,7 +176,7 @@ void setup() {
   }
 
   if (! sen6x.start()) {
-    Serial.println(F("could not start sen6x."));
+    Serial.println(F("Could not start sen6x."));
     while(1);
   }
   else {
