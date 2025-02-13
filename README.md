@@ -39,7 +39,10 @@ See the description in the top of the sketch and read the documentation (odt)
  * ver draft 1.9 : updated example7 with information about RAW values
 ### Version 1.0 / February 2025
  * Version 1 : added /updated examples and documentation
-
+### Version 1.0.1 / February 2025
+ * added Example23 with SGP30
+ * added Example31 with SCD41
+ * updated documentation
 ## Author
  * Paul van Haastrecht (paulvha@hotmail.com)
 
