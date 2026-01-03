@@ -13,7 +13,7 @@ I have done a number of projects on air-sensors. This is a version of a working 
 More work continues to happen to create examples and compare against other sensors.
 
 ## Prerequisites
-Examples 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30 have a dependency on other libraries and hardware. Documented in sketch.
+Examples 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 40 have a dependency on other libraries and hardware. Documented in sketch.
 
 ## Software installation
 Obtain the zip and install like any other.
@@ -33,7 +33,7 @@ See the description in the top of the sketch and read the documentation (odt)
  * ver draft 1.3 : add opcode structure, added examples
  * ver draft 1.5 : added examples and update source code routines
  * ver draft 1.6 : added and updated examples. Updates to SRC-code routines
-### Version DRAFT / January 2025 
+### Version DRAFT / January 2025
  * ver draft 1.7 : added and updated CO2 examples. Updates to SRC-code routines
  * ver draft 1.8 : updated examples with CO2 ASc, added example7, Updates to SRC-code routines
  * ver draft 1.9 : updated example7 with information about RAW values
@@ -43,6 +43,9 @@ See the description in the top of the sketch and read the documentation (odt)
  * added Example23 with SGP30
  * added Example31 with SCD41
  * updated documentation
+### Version 1.0.2 / January 2026
+ * added Example40 basic usage with UNOQ
+ * updated driver for DEBUG display
 ## Author
  * Paul van Haastrecht (paulvha@hotmail.com)
 
