@@ -3,7 +3,11 @@
 ## ===========================================================
 
 A program to set instructions and get information from an SEN6x. It has been
-tested to run I2C communication on UNOR4 Wifi
+tested to run I2C communication on UNOR4 Wifi and UNOQ among others.
+
+This code supports the SEN60(obsolete), SEN63C, SEN65, SEN66, SEN68. It has
+been tested with the SEN66 only. It does NOT include support for the SEN62 and SEN69C.
+They have recently been announced.
 
 <br> A detailed description of the findings are in SEN6x.odt
 
@@ -46,6 +50,8 @@ See the description in the top of the sketch and read the documentation (odt)
 ### Version 1.0.2 / January 2026
  * added Example40 basic usage with UNOQ
  * updated driver for DEBUG display
+ * updated documentation
+
 ## Author
  * Paul van Haastrecht (paulvha@hotmail.com)
 
@@ -54,5 +60,5 @@ This project is licensed under the GNU GENERAL PUBLIC LICENSE 3.0
 
 ## Acknowledgments
 
-### Make sure to read the datasheet from Sensirion, November 2024 version.<br>
+### Make sure to read the datasheet from Sensirion, December 2025 version.<br>
 ### Also read the many documents in the extra-folder.<br>

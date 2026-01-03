@@ -1,25 +1,25 @@
 /**
  * This file contains an overview of the commands for the different
- * SEN6x sensors. 
- * 
+ * SEN6x sensors.
+ *
  * A 0x0000 means the command is not supported for this sensor
- * 
+ *
  * Version DRAFT 1.5 / December 2024 /paulvha
  * - updated version
  */
- 
+
 #include <sen6x.h>
 
 /**
  * Contains the OpCodes for the commands for each sensor
- *  
+ *
  * if the opcode is 0x0000 the command is not supported by the sensor
- * 
+ *
  * KEEP IN SYNC WITH Sen6x_Comds_offset !!
  */
 uint16_t SEN6xCommandOpCode [5][SEN6x_GET_SET_ALTITUDE +1] =
 {
-  /** SEN60 **/ 
+  /** SEN60 **/
   {
     0x2152, // SEN6x_START_MEASUREMENT
     0x3f86, // SEN6x_STOP_MEASUREMENT
@@ -45,7 +45,7 @@ uint16_t SEN6xCommandOpCode [5][SEN6x_GET_SET_ALTITUDE +1] =
     0x0000, // SEN6x_GET_SET_AMBIENT_PRESS
     0x0000  // SEN6x_GET_SET_ALTITUDE
   },
-  /** SEN63C **/ 
+  /** SEN63C **/
   {
     0x0021, // SEN6x_START_MEASUREMENT
     0x0104, // SEN6x_STOP_MEASUREMENT
@@ -71,7 +71,7 @@ uint16_t SEN6xCommandOpCode [5][SEN6x_GET_SET_ALTITUDE +1] =
     0X6720, // SEN6x_GET_SET_AMBIENT_PRESS
     0X6736 // SEN6x_GET_SET_ALTITUDE
   },
-  /** SEN65 **/ 
+  /** SEN65 **/
   {
     0x0021, // SEN6x_START_MEASUREMENT
     0x0104, // SEN6x_STOP_MEASUREMENT
@@ -97,7 +97,9 @@ uint16_t SEN6xCommandOpCode [5][SEN6x_GET_SET_ALTITUDE +1] =
     0x0000, // SEN6x_GET_SET_AMBIENT_PRESS
     0x0000  // SEN6x_GET_SET_ALTITUDE
   },
-  /** SEN66 **/ 
+  /** SEN66
+   *
+   * not yet implemented SEN66_GET_SHT_HEATER_MEASUREMENTS_CMD_ID = 0x6790,**/
   {
     0x0021, // SEN6x_START_MEASUREMENT
     0x0104, // SEN6x_STOP_MEASUREMENT
@@ -123,7 +125,8 @@ uint16_t SEN6xCommandOpCode [5][SEN6x_GET_SET_ALTITUDE +1] =
     0X6720, // SEN6x_GET_SET_AMBIENT_PRESS
     0X6736  // SEN6x_GET_SET_ALTITUDE
   },
-  /** SEN68 **/ 
+  /** SEN68
+   * not yet implemented SEN66_GET_SHT_HEATER_MEASUREMENTS_CMD_ID = 0x6790,**/
   {
     0x0021, // SEN6x_START_MEASUREMENT
     0x0104, // SEN6x_STOP_MEASUREMENT
